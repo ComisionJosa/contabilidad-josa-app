@@ -622,6 +622,8 @@ function esCerrada(){const c=activa();return c&&c.cerrada;}
 
 /* ============ ARRANQUE / CARGA ============ */
 async function boot(){
+  // limpieza única (6-10-2026): borrar las copias internas antiguas del navegador; los datos buenos están en GitHub
+  try{ if(!localStorage.getItem('cf_limpieza_20261006')){ localStorage.removeItem(LS_SNAP); localStorage.setItem('cf_limpieza_20261006','1'); } }catch(_){}
   if(ES_APP_MOVIL){ await bootMovil(); return; }
   try{
     const r=await fetch('/api/load',{cache:'no-store'});
