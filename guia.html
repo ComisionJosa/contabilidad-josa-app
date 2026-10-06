@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de uso · Contabilidad Josa</title>
+<style>
+  :root{--acc:#f5a623;--blue:#2f6fd6;--green:#137a37;--red:#b00020;--ink:#1f2733;--muted:#5b6675;--line:#e2e6ec;--bg:#f4f6f9;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+  .bar{position:sticky;top:0;background:#16212e;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);z-index:10}
+  .bar h1{font-size:18px;margin:0;flex:1}
+  .bar button{background:var(--acc);border:none;color:#231a06;font-weight:700;padding:9px 15px;border-radius:9px;cursor:pointer;font-size:14px}
+  main{max-width:840px;margin:0 auto;padding:26px 20px 60px}
+  .hero{text-align:center;padding:18px 0 10px}
+  .hero .logo{font-size:54px}
+  .hero h2{margin:6px 0 2px;font-size:26px}
+  .hero p{color:var(--muted);margin:0}
+  section{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  h3{margin:0 0 10px;font-size:19px;display:flex;align-items:center;gap:9px;border-bottom:2px solid var(--acc);padding-bottom:8px}
+  h4{margin:16px 0 6px;font-size:15px}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0;padding-left:22px}
+  li{margin:5px 0}
+  .tip{background:#fff8e9;border:1px solid #f0d79a;border-radius:10px;padding:10px 14px;margin:12px 0;font-size:14px}
+  .warn{background:#fdeaea;border:1px solid #f2b8b8;border-radius:10px;padding:10px 14px;margin:12px 0;font-size:14px}
+  .ok{background:#e9f6ee;border:1px solid #b7e0c4;border-radius:10px;padding:10px 14px;margin:12px 0;font-size:14px}
+  .btn{display:inline-block;background:#eef1f5;border:1px solid var(--line);border-radius:8px;padding:2px 8px;font-size:13px;font-weight:600;white-space:nowrap}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+  .tabs .btn{background:#16212e;color:#fff;border-color:#16212e}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+  .card2{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fbfcfd}
+  .card2 b{display:block;margin-bottom:2px}
+  .muted{color:var(--muted)}
+  code{background:#eef1f5;padding:1px 6px;border-radius:5px;font-size:13px}
+  .step{counter-reset:s;list-style:none;padding-left:0}
+  .step li{position:relative;padding:6px 0 6px 38px;border-bottom:1px dashed var(--line)}
+  .step li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:6px;width:26px;height:26px;background:var(--acc);color:#231a06;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:24px}
+  @media print{ .bar{display:none} body{background:#fff} section{break-inside:avoid;box-shadow:none} main{padding:0} }
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>📘 Guía de uso · Contabilidad Josa</h1>
+  <button onclick="window.print()">🖨️ Guardar como PDF</button>
+</div>
+<main>
+  <div class="hero">
+    <div class="logo">🎉🪙</div>
+    <h2>Contabilidad Josa</h2>
+    <p>Llevar las cuentas, el stock, los premios y las anotaciones de las fiestas del pueblo, fácil y sin líos.</p>
+  </div>
+
+  <section>
+    <h3>▶️ Abrir el programa</h3>
+    <ul>
+      <li>Doble clic en el icono del escritorio <span class="btn">Contabilidad Josa</span> (la moneda €). Se abre <b>maximizado</b> en su propia ventana, como un programa normal.</li>
+      <li>Si es un ordenador nuevo: mira el apartado <b>💻 Usarlo en otro ordenador</b> más abajo.</li>
+    </ul>
+    <div class="ok">✅ Todo se guarda <b>solo</b> mientras trabajas. No hay que darle a "guardar". Y si hay internet, se sube solo a GitHub.</div>
+    <div class="warn">⚠️ Al cerrar la ventana te preguntará para confirmar. Es normal: los datos ya están guardados.</div>
+    <div class="tip">💡 Puedes dejarlo <b>minimizado</b> todo el rato que quieras: no se cierra ni pierde nada.</div>
+  </section>
+
+  <section>
+    <h3>🧭 Las pestañas de arriba</h3>
+    <div class="tabs">
+      <span class="btn">📊 Resumen</span><span class="btn">💶 Movimientos</span><span class="btn">📈 Panel</span><span class="btn">📦 Stock</span>
+      <span class="btn">📝 Anotaciones</span><span class="btn">🏆 Concursos</span><span class="btn">📇 Contactos</span><span class="btn">🗂️ Comisiones</span>
+    </div>
+    <p>Las pestañas se quedan <b>siempre visibles arriba</b>, aunque bajes en una pantalla larga.</p>
+    <p>Arriba a la derecha: el desplegable <b>Comisión</b> (de qué año estás viendo las cuentas) y el engranaje <span class="btn">⚙️</span> para las copias y los datos.</p>
+    <div class="grid">
+      <div class="card2"><b>📊 Resumen</b><span class="muted">Vista rápida: dinero en caja y cómo va cada fiesta.</span></div>
+      <div class="card2"><b>💶 Movimientos</b><span class="muted">Apuntar ingresos y gastos, con sus facturas y tickets. El corazón del programa.</span></div>
+      <div class="card2"><b>📈 Panel</b><span class="muted">Gráficos y filtros para ver dónde va el dinero.</span></div>
+      <div class="card2"><b>📦 Stock</b><span class="muted">Lo que hay de bebida, comida, vasos y material; lo que se gasta y se repone en cada fiesta.</span></div>
+      <div class="card2"><b>📝 Anotaciones</b><span class="muted">Lo que conviene recordar de cada fiesta para el año que viene.</span></div>
+      <div class="card2"><b>🏆 Concursos</b><span class="muted">Premios de San Roque: qué se da, cuánto cuesta, dónde comprarlo e inscripciones.</span></div>
+      <div class="card2"><b>📇 Contactos</b><span class="muted">Agenda: proveedores, orquestas, cura, lotería… (se guardan siempre).</span></div>
+      <div class="card2"><b>🗂️ Comisiones</b><span class="muted">Crear el año de cada comisión, sus fiestas y su resumen.</span></div>
+      <div class="card2"><b>⚙️ (engranaje)</b><span class="muted">Copias de seguridad, Excel, papelera. Se abre aparte y se cierra con ✕ Cerrar o Esc.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h3>💶 Apuntar un movimiento (ingreso o gasto)</h3>
+    <ol class="step">
+      <li>Ve a <span class="btn">💶 Movimientos</span> y pulsa <span class="btn">+ Añadir</span>.</li>
+      <li>Elige <b>Gasto</b> o <b>Ingreso</b> (el color te lo indica: rojo/verde).</li>
+      <li>Pon la <b>fecha</b> y el <b>importe</b> (€).</li>
+      <li>Elige la <b>fiesta</b> (Halloween, Santa Lucía, Semana Santa, San Roque o el evento que sea).</li>
+      <li>Elige la <b>categoría</b> de la lista (hay buscador). Si no está, créala con <span class="btn">➕ Crear categoría nueva</span> o en <span class="btn">🏷️ Categorías</span>.</li>
+      <li>Escribe el <b>concepto</b> (ej: "Orquesta La Original"), el <b>método de pago</b> y, si quieres, proveedor y nota.</li>
+      <li>Si es un gasto, marca el <b>estado del pago</b>: ✅ Pagado, ½ Pagado a medias (pones cuánto) o ⏳ Pendiente de pagar.</li>
+      <li>Puedes adjuntar facturas, tickets o fotos. <b>Guardar</b>.</li>
+    </ol>
+    <div class="tip">💡 Para editar o borrar un movimiento: ✏️ (editar) y 🗑️ (a la papelera) al final de cada fila. Arriba tienes filtros por fiesta, tipo, pago, categoría, método, fechas y buscador.</div>
+  </section>
+
+  <section>
+    <h3>📎 Facturas, tickets y documentos</h3>
+    <p>En <span class="btn">💶 Movimientos</span> hay una columna <b>📎 Docs</b>:</p>
+    <ul>
+      <li><span class="btn">＋ Adjuntar</span> si el movimiento no tiene nada: elige uno o varios archivos. Vale <b>cualquier archivo</b>: PDF, fotos, Excel, Word…</li>
+      <li><span class="btn">📎 2</span> (en verde) si ya tiene documentos: abre la ventana de documentos de ese movimiento.</li>
+    </ul>
+    <h4>La ventana de documentos</h4>
+    <ul>
+      <li>Arriba sale el <b>movimiento</b> (concepto, fecha, fiesta e importe).</li>
+      <li>Se ven <b>todos los documentos en vista previa</b>: las fotos y los PDF se ven directamente; Excel, Word y otros salen con su icono y su nombre.</li>
+      <li><span class="btn">🔍 Ver</span> (o tocar la vista previa) lo abre en grande. Los Excel/Word se abren con su programa.</li>
+      <li><span class="btn">🗑️</span> lo quita (va a la papelera). <span class="btn">➕ Añadir documentos</span> sube más.</li>
+    </ul>
+    <div class="ok">✅ Los documentos se guardan como archivos en la carpeta <code>recibos</code> del programa y se suben con todo lo demás.</div>
+  </section>
+
+  <section>
+    <h3>🏷️ Categorías</h3>
+    <ul>
+      <li>Botón <span class="btn">🏷️ Categorías</span> en Movimientos. Una sola lista; al apuntar decides si es ingreso o gasto.</li>
+      <li>Crear una nueva con nombre y (opcional) descripción. El botón ℹ️ muestra/edita la descripción.</li>
+      <li>Solo se pueden borrar las que no tienen ningún movimiento (protege las cuentas).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>📦 Stock (inventario)</h3>
+    <p>Lo que hay de bebida, comida, vasos, material… Cada comisión tiene su stock y una nueva <b>empieza con lo que dejó la anterior</b>. Tiene tres pantallas:</p>
+    <h4>📦 Stock actual</h4>
+    <ul>
+      <li>Lista de artículos agrupados por categoría (los títulos en naranja), con precio, cantidad y valoración. Arriba: nº de artículos, cuántos tienen existencias y el <b>valor total del stock</b>.</li>
+      <li>En cada artículo: <span class="btn" style="color:#b00020">－</span> apunta lo que <b>se ha gastado</b> y <span class="btn" style="color:#137a37">＋</span> lo que <b>se ha repuesto o comprado</b>. Eliges cantidad, fiesta, fecha y una nota. Te dice cuánto hay y cuánto quedará. <b>El stock se actualiza solo.</b></li>
+      <li><span class="btn">+ Nuevo artículo</span>: nombre, categoría, referencia del proveedor, precio por unidad, cantidad, unidad y un mínimo opcional. Si algo baja del mínimo sale arriba en <b>🛒 Por comprar</b>.</li>
+      <li>Con ✏️ cambias los datos del artículo (la cantidad de ahí es la que había al empezar la comisión).</li>
+    </ul>
+    <h4>📝 Gastos y reposiciones</h4>
+    <ul>
+      <li>El control de todo lo que se ha ido gastando y reponiendo: fecha, artículo, gastado/repuesto, cantidad, fiesta, valor en € y nota.</li>
+      <li>Filtros por tipo, fiesta, categoría y buscador. Abajo, el total gastado y repuesto en €. Con 🗑️ se borra un apunte (va a la papelera).</li>
+    </ul>
+    <h4>📊 Histórico por fiestas y años</h4>
+    <ul>
+      <li>Para la comisión que elijas: lo que había <b>al empezar</b>, lo <b>gastado en cada fiesta</b>, las <b>entradas/compras</b> y lo que <b>hay ahora</b> (o lo que quedó al acabar). Abajo, todo en euros.</li>
+    </ul>
+    <div class="tip">💡 Categorías de stock con el botón <span class="btn">🏷️ Categorías</span>. El buscador encuentra también por referencia del proveedor.</div>
+  </section>
+
+  <section>
+    <h3>📝 Anotaciones</h3>
+    <p>Lo que hay que recordar de cada fiesta: cuánta gente vino a la comida, qué se acabó, a quién llamar y cuándo, cantidades que hicieron falta… Quedan guardadas para las comisiones siguientes.</p>
+    <ul>
+      <li>Salen agrupadas por fiesta (y un apartado <b>📌 General</b>), en tarjetas.</li>
+      <li>Al entrar ves las de tu comisión; si aún no tiene, te avisa de las que dejó la anterior para leerlas. Con el desplegable cambias de comisión.</li>
+      <li>Botones por fiesta, buscador y la casilla <b>📌 Solo importantes</b> (las importantes salen con borde naranja).</li>
+      <li><span class="btn">+ Nueva anotación</span>: título, fiesta (o General), texto y la casilla de importante.</li>
+    </ul>
+    <div class="tip">✍️ Al escribir: deja una <b>línea en blanco</b> entre párrafos; empieza una línea con <code>- </code> para hacer una <b>lista</b>; pon <code>**así**</code> para <b>negrita</b>.</div>
+  </section>
+
+  <section>
+    <h3>🏆 Concursos y premios (San Roque)</h3>
+    <p>El control de los premios de cada concurso de San Roque.</p>
+    <ul>
+      <li>Tabla ordenada <b>por día</b> con: concurso, categoría, premio, <b>coste</b>, <b>dónde comprarlo</b> (es solo una idea), <b>inscripción</b>, el premio del <b>año anterior</b> y una nota.</li>
+      <li>Arriba: cuántos premios, el <b>gasto total</b> y cuántos fueron regalados (salen como <b>0 €</b> en verde).</li>
+      <li><span class="btn">+ Nuevo premio</span> te sugiere los concursos y tiendas que ya se usaron.</li>
+      <li><span class="btn">📋 Usar como plantilla</span> (viendo una comisión pasada): copia todos sus concursos a la tuya, con las fechas del año nuevo, inscripción y dónde comprar. El premio y el coste quedan en blanco para decidirlos, con el del año anterior como referencia.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>📇 Contactos</h3>
+    <ul>
+      <li>Agenda del pueblo: nombre (empresa o entidad), a qué se dedica, <b>dirección</b>, teléfono y correo generales (varios separados con <code>/</code>) y observaciones.</li>
+      <li><b>Personas de contacto</b>: cada contacto puede tener varias personas, cada una con su nombre, función, teléfono y correo (botón <span class="btn">+ Añadir persona</span>).</li>
+      <li>Toca un teléfono para llamar, un correo para escribir, y el <b>💬</b> de los móviles para abrir <b>WhatsApp</b>.</li>
+      <li>Se guardan para todas las comisiones.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>🗂️ Comisiones (los años)</h3>
+    <ul>
+      <li><span class="btn">+ Nueva comisión</span>: pones el nombre, el año y el saldo inicial (el dinero que te dejó la comisión anterior).</li>
+      <li>Cada comisión gestiona 4 fiestas: 🎃 Halloween, 🕯️ Santa Lucía, ✝️ Semana Santa, 🐂 San Roque. Con <span class="btn">🎪 Fiestas</span> puedes desactivar las que un año no se hagan o añadir eventos nuevos.</li>
+      <li><span class="btn">📄 Resumen / PDF</span>: informe de esa comisión, listo para guardar en PDF y enseñar en la asamblea.</li>
+      <li><span class="btn">🔒 Cerrar</span>: deja la comisión en solo lectura para que no se toque por error (se puede reabrir).</li>
+    </ul>
+    <div class="tip">💡 Al crear una comisión nueva, hereda automáticamente el stock que dejó la anterior. Las anotaciones y premios de las comisiones pasadas se pueden consultar siempre.</div>
+  </section>
+
+  <section>
+    <h3>📈 Panel</h3>
+    <p>Gráficos con filtros por año, fiesta, tipo (ingresos/gastos), categoría y búsqueda. Tartas por categoría y barras de ingresos vs gastos. Todo se actualiza al momento.</p>
+  </section>
+
+  <section>
+    <h3>⚙️ Copias de seguridad y datos (el engranaje)</h3>
+    <p>Pulsa el <span class="btn">⚙️</span> de arriba a la derecha. Se abre como pantalla aparte; para volver, <span class="btn">✕ Cerrar</span> o la tecla <b>Esc</b>.</p>
+    <ul>
+      <li><b>Automático:</b> cada cambio se guarda como fichero en la carpeta y se hace una copia con su fecha. Se limpian solas las muy antiguas.</li>
+      <li><b>GitHub:</b> si hay internet, cada cambio se sube solo a la cuenta de la comisión. Si trabajas sin internet no pasa nada: se guarda en el ordenador y se sube la próxima vez que guardes algo con conexión.</li>
+      <li><span class="btn">🕘 Restaurar / cargar copia</span>: vuelve a una copia anterior por fecha, o carga un fichero <code>.json</code>.</li>
+      <li><span class="btn">📤 Enviar copia</span>: manda la copia por WhatsApp, correo, etc.</li>
+      <li><span class="btn">📊 Exportar a Excel</span>: los movimientos en una hoja de Excel con totales.</li>
+      <li><span class="btn">🗑️ Papelera</span>: todo lo que borras (movimientos, documentos, contactos, categorías, comisiones, artículos y apuntes de stock, anotaciones, premios) va aquí y se puede <b>restaurar</b>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>💻 Usarlo en otro ordenador</h3>
+    <ol class="step">
+      <li>Lleva el instalador <span class="btn">Instalar Contabilidad Josa.bat</span> en un USB al otro ordenador.</li>
+      <li>Doble clic. Si faltan, instala solo <b>Git</b> y <b>Node.js</b> (necesita internet).</li>
+      <li>Baja el programa y todos los datos de GitHub. Si se abre el navegador, entra con la cuenta <b>ComisionJosa</b> (solo la primera vez).</li>
+      <li>Crea el icono <b>Contabilidad Josa</b> en el escritorio y lo abre. Listo.</li>
+    </ol>
+    <div class="warn">⚠️ No lo tengas abierto en <b>dos ordenadores a la vez</b>: cierra en uno, espera unos segundos a que suba, y abre en el otro.</div>
+  </section>
+
+  <section>
+    <h3>🔄 Pasar el programa a la siguiente comisión</h3>
+    <ul>
+      <li>Lo más fácil: que usen el instalador de arriba con la cuenta de GitHub de la comisión. Tendrán todo el histórico, el stock, las anotaciones y los premios.</li>
+      <li>Sin internet: copia la <b>carpeta entera</b> a un USB, pégala en el otro PC y ejecuta <span class="btn">Crear acceso directo en escritorio.bat</span>.</li>
+      <li>Después crean su comisión nueva y a seguir.</li>
+    </ul>
+    <div class="warn">⚠️ Mueve/pasa siempre la <b>carpeta entera</b>, nunca solo un archivo suelto. Programa, datos, copias y documentos van juntos.</div>
+  </section>
+
+  <footer>Contabilidad Josa · Guía de uso · Pulsa "Guardar como PDF" arriba para tenerla en papel o en el móvil.</footer>
+</main>
+</body>
+</html>
