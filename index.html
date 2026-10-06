@@ -233,6 +233,11 @@
   .doc-prev iframe{width:100%;height:100%;border:0;background:#fff;pointer-events:none}
   .doc-pie{display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:1px solid var(--line)}
   .doc-pie .nm{flex:1;font-size:13px;color:var(--muted)}
+  /* App del móvil: en Movimientos solo el filtro de fiesta (el resto, en el ordenador) */
+  .app-movil .tb-movs > :not(#fFiesta):not(.pill):not(.primary){display:none !important}
+  .app-movil .tb-movs #fFiesta{flex:1 1 100%}
+  .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
+  .app-movil .tb-movs .primary{flex:1 1 100%}
   .adj-si{background:#123524;color:var(--green);border-color:#1d5a3a;font-weight:700}
   .adj-no{color:var(--muted);font-size:12px}
   header .gear{padding:6px 10px;font-size:20px;line-height:1;border-radius:50%;width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px}
@@ -762,6 +767,9 @@ function pantallaConectar(error){
 }
 async function bootMovil(){
   document.title='Cont. Josa';
+  document.body.classList.add('app-movil');
+  // en el móvil solo se filtra por fiesta: que no quede ningún otro filtro puesto
+  Object.assign(state.filtro,{tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:''});
   ghConfigDeEnlace();
   try{ GH=JSON.parse(localStorage.getItem(GH_KEY)); }catch(_){ GH=null; }
   if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
@@ -1004,7 +1012,7 @@ function renderMovs(){
   let ing=0,gas=0;movs.forEach(m=>{if(m.tipo==='ingreso')ing+=+m.importe;else gas+=+m.importe;});
   let html='';
   if(locked)html+=`<div class="banner warn">🔒 Comisión cerrada (solo lectura).</div>`;
-  html+=`<div class="toolbar">
+  html+=`<div class="toolbar tb-movs">
     <select id="fFiesta"><option value="">Todas las fiestas</option>${fiestasOrden(c).map(x=>`<option value="${x.id}" ${f.fiesta===x.id?'selected':''}>${EMO[x.tipo]||'🎪'} ${esc(x.nombre)}</option>`).join('')}</select>
     <select id="fTipo"><option value="">Todo</option><option value="ingreso" ${f.tipo==='ingreso'?'selected':''}>Solo ingresos</option><option value="gasto" ${f.tipo==='gasto'?'selected':''}>Solo gastos</option></select>
     <select id="fEstado"><option value="">Todo el pago</option><option value="pagado" ${f.estado==='pagado'?'selected':''}>✅ Pagados</option><option value="parcial" ${f.estado==='parcial'?'selected':''}>½ A medias</option><option value="pendiente" ${f.estado==='pendiente'?'selected':''}>⏳ Pendientes</option></select>
