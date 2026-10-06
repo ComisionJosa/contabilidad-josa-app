@@ -1,5 +1,5 @@
 {
-  "name": "Contabilidad Josa",
+  "name": "Cont. Josa",
   "short_name": "Cont. Josa",
   "description": "Cuentas, stock, anotaciones y premios de la comisión de fiestas de Josa",
   "lang": "es",
@@ -22,5 +22,6 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "id": "./"
 }

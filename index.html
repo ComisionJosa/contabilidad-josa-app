@@ -759,6 +759,7 @@ function pantallaConectar(error){
     </details></div>`;
 }
 async function bootMovil(){
+  document.title='Cont. Josa';
   ghConfigDeEnlace();
   try{ GH=JSON.parse(localStorage.getItem(GH_KEY)); }catch(_){ GH=null; }
   if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
