@@ -1,6 +1,6 @@
 {
   "name": "Contabilidad Josa",
-  "short_name": "Contabilidad",
+  "short_name": "Cont. Josa",
   "description": "Cuentas, stock, anotaciones y premios de la comisión de fiestas de Josa",
   "lang": "es",
   "start_url": "./",
@@ -10,7 +10,17 @@
   "background_color": "#0f1720",
   "theme_color": "#16212e",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
