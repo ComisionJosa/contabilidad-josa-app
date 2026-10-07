@@ -238,6 +238,15 @@
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  .stat.clic{cursor:pointer;transition:border-color .15s,transform .15s}
+  .stat.clic:hover{border-color:var(--acc);transform:translateY(-1px)}
+  .stat.clic .ver{font-size:11.5px;color:var(--muted);margin-top:auto}
+  .det-lista{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto;margin-top:8px}
+  .det-fila{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:9px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+  .det-fila .c{font-weight:600}
+  .det-fila .i{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .det-fila .s{font-size:12px;color:var(--muted)}
+  .det-fila .s2{font-size:12px;text-align:right;color:var(--muted)}
   .adj-si{background:#123524;color:var(--green);border-color:#1d5a3a;font-weight:700}
   .adj-no{color:var(--muted);font-size:12px}
   header .gear{padding:6px 10px;font-size:20px;line-height:1;border-radius:50%;width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px}
@@ -503,6 +512,12 @@
   <div id="docsSub" class="muted" style="font-size:13px;margin-bottom:12px"></div>
   <div id="docsGrid" class="docs-grid"></div>
   <div class="modal-actions"><button class="primary" id="docsAdd" onclick="adjuntarRapido(docsMovId)">➕ Añadir documentos</button><button class="ghost" onclick="closeModal('docsModal')">Cerrar</button></div>
+</div></div>
+
+<!-- MODAL DETALLE RÁPIDO (Panel) -->
+<div class="modal-bg" id="detModal"><div class="modal" style="max-width:640px">
+  <div class="section-title" style="margin-bottom:4px"><h3 id="detTitulo" style="margin:0"></h3><button class="ghost" onclick="closeModal('detModal')">✕ Cerrar</button></div>
+  <div id="detCuerpo"></div>
 </div></div>
 
 <!-- MODAL CATEGORÍAS (contabilidad) -->
@@ -1135,9 +1150,33 @@ function barsIngGas(groups){
     <div class="bar" style="margin-top:3px"><span style="width:${(g.gas/max*100).toFixed(1)}%;background:var(--red)"></span></div>
   </div>`).join('');
 }
+/* ---- Panel: ventanita de detalle al pulsar Ingresos / Gastos pagados / sin pagar / a medias ---- */
+let panelMs=[];
+function detallePanel(tipo){
+  const est=m=>m.estadoPago||'pagado';
+  const T={ingreso:['💶 Ingresos',m=>m.tipo==='ingreso',m=>+m.importe||0],
+    pagado:['✅ Gastos pagados',m=>m.tipo==='gasto'&&pagadoDe(m)>0,m=>pagadoDe(m)],
+    pendiente:['⏳ Gastos sin pagar',m=>m.tipo==='gasto'&&est(m)==='pendiente',m=>+m.importe||0],
+    parcial:['½ Gastos a medias',m=>m.tipo==='gasto'&&est(m)==='parcial',m=>(+m.importe||0)-pagadoDe(m)]}[tipo];
+  const lista=panelMs.filter(T[1]).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const total=lista.reduce((t,m)=>t+T[2](m),0);
+  const fiestaDe=m=>{ const c=db.comisiones.find(x=>x.id===m.comisionId); const f=c&&(c.fiestas||[]).find(x=>x.id===m.fiestaId); return f?(EMO[f.tipo]||'🎪')+' '+f.nombre:''; };
+  const color=tipo==='ingreso'?'pos':(tipo==='pagado'?'neg':'');
+  document.getElementById('detTitulo').textContent=T[0];
+  document.getElementById('detCuerpo').innerHTML=`<div class="muted" style="font-size:13px">${lista.length} movimiento${lista.length===1?'':'s'} · total ${tipo==='parcial'?'que falta por pagar':''} <b class="money ${color}" style="${color?'':'color:#f5cf7a'}">${money(total)}</b></div>`+
+    (lista.length?`<div class="det-lista">${lista.map(m=>{
+      const extra = tipo==='parcial' ? `de ${money(+m.importe||0)} · pagado ${money(pagadoDe(m))}`
+                  : (tipo==='pagado' && est(m)==='parcial') ? `pagado a medias (de ${money(+m.importe||0)})` : (m.metodo||'');
+      return `<div class="det-fila"><span class="c">${esc(m.concepto||'(sin concepto)')}</span><span class="i money ${color}" style="${color?'':'color:#f5cf7a'}">${money(T[2](m))}</span>
+        <span class="s">${fmtFecha(m.fecha)} · ${esc(fiestaDe(m))}${m.categoria?' · '+esc(m.categoria):''}${m.proveedor?' · '+esc(m.proveedor):''}</span><span class="s2">${esc(extra)}</span></div>`; }).join('')}</div>`
+    :`<div class="card empty" style="margin-top:10px">No hay ninguno con los filtros actuales.</div>`);
+  showModal('detModal');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('detModal').classList.contains('show')) closeModal('detModal'); });
+document.getElementById('detModal').addEventListener('click',e=>{ if(e.target.id==='detModal') closeModal('detModal'); });
 function renderPanel(){
   const f=panelFiltro; const ms=panelMovs();
-  let ing=0,gas=0,pend=0,sinPag=0,nSin=0,medFalta=0,medPag=0,nMed=0; ms.forEach(m=>{if(m.tipo==='ingreso')ing+=+m.importe;else {const imp=+m.importe||0, pg=pagadoDe(m); gas+=pg; pend+=imp-pg; const est=m.estadoPago||'pagado'; if(est==='pendiente'){sinPag+=imp;nSin++;} else if(est==='parcial'){medFalta+=imp-pg;medPag+=pg;nMed++;}}});
+  panelMs=ms; let ing=0,gas=0,pend=0,sinPag=0,nSin=0,medFalta=0,medPag=0,nMed=0; ms.forEach(m=>{if(m.tipo==='ingreso')ing+=+m.importe;else {const imp=+m.importe||0, pg=pagadoDe(m); gas+=pg; pend+=imp-pg; const est=m.estadoPago||'pagado'; if(est==='pendiente'){sinPag+=imp;nSin++;} else if(est==='parcial'){medFalta+=imp-pg;medPag+=pg;nMed++;}}});
   const comiOpts=`<option value="">Todos los años</option>`+[...db.comisiones].sort((a,b)=>a.anioInicio-b.anioInicio).map(c=>`<option value="${c.id}" ${f.comi===c.id?'selected':''}>${esc(c.nombre)}</option>`).join('');
   const tiposF=[['','Todas las fiestas'],['halloween','🎃 Halloween'],['santalucia','🕯️ Santa Lucía'],['semanasanta','✝️ Semana Santa'],['sanroque','🐂 San Roque'],['otro','🎪 Otros']];
   const fiestaOpts=tiposF.map(([v,l])=>`<option value="${v}" ${f.fiestaTipo===v?'selected':''}>${l}</option>`).join('');
@@ -1152,13 +1191,12 @@ function renderPanel(){
     <button class="ghost" onclick="resetPanel()">↺ Limpiar filtros</button>
   </div>`;
   html+=`<div class="grid cols-4" style="margin-bottom:16px">
-    <div class="card stat"><span class="k">Ingresos</span><span class="v money pos">${money(ing)}</span></div>
-    <div class="card stat"><span class="k">Gastos pagados</span><span class="v money neg">${money(gas)}</span></div>
-    <div class="card stat"><span class="k">⏳ Gastos sin pagar</span><span class="v" style="color:#f5cf7a">${money(sinPag)}</span><span class="muted" style="font-size:12px">${nSin} gasto${nSin===1?'':'s'} sin pagar nada</span></div>
-    <div class="card stat"><span class="k">½ Gastos a medias</span><span class="v" style="color:#f5cf7a">${money(medFalta)}</span><span class="muted" style="font-size:12px">${nMed?`falta por pagar · ya pagado ${money(medPag)}`:'ninguno a medias'}</span></div>
+    <div class="card stat clic" onclick="detallePanel('ingreso')" title="Ver detalle"><span class="k">Ingresos</span><span class="v money pos">${money(ing)}</span><span class="ver">🔍 Ver detalle</span></div>
+    <div class="card stat clic" onclick="detallePanel('pagado')" title="Ver detalle"><span class="k">Gastos pagados</span><span class="v money neg">${money(gas)}</span><span class="ver">🔍 Ver detalle</span></div>
+    <div class="card stat clic" onclick="detallePanel('pendiente')" title="Ver detalle"><span class="k">⏳ Gastos sin pagar</span><span class="v" style="color:#f5cf7a">${money(sinPag)}</span><span class="muted" style="font-size:12px">${nSin} gasto${nSin===1?'':'s'} sin pagar nada</span><span class="ver">🔍 Ver detalle</span></div>
+    <div class="card stat clic" onclick="detallePanel('parcial')" title="Ver detalle"><span class="k">½ Gastos a medias</span><span class="v" style="color:#f5cf7a">${money(medFalta)}</span><span class="muted" style="font-size:12px">${nMed?`falta por pagar · ya pagado ${money(medPag)}`:'ninguno a medias'}</span><span class="ver">🔍 Ver detalle</span></div>
     <div class="card stat" style="grid-column:1/-1"><span class="k">Resultado</span><span class="v money ${ing-gas>=0?'pos':'neg'}">${money(ing-gas)}</span></div>
   </div>`;
-  if(pend>0) html+=`<div class="banner warn" style="margin:-4px 0 16px">⏳ <b>Pendiente de pagar: ${money(pend)}</b> — aún no se cuenta en los gastos ni en el resultado; se sumará cuando se pague.</div>`;
   const byCat=tipo=>{const map={};ms.filter(m=>m.tipo===tipo).forEach(m=>{const k=m.categoria||'(sin categoría)';map[k]=(map[k]||0)+(m.tipo==='gasto'?pagadoDe(m):+m.importe);});return Object.entries(map).filter(([,v])=>v>0).map(([label,value])=>({label,value}));};
   if(f.tipo==='ingreso') html+=donutBox('Ingresos por categoría',byCat('ingreso'));
   else if(f.tipo==='gasto') html+=donutBox('Gastos por categoría',byCat('gasto'));
