@@ -669,10 +669,10 @@ let versionDatos=null;
 async function vigilarDatos(){
   try{
     const j=await (await fetch('/api/version',{cache:'no-store'})).json();
-    if(j.conflicto) mostrarConflicto();
+    if(j.conflicto) mostrarConflicto(); else { const a=document.getElementById('avisoConflicto'); if(a) a.remove(); }
     if(versionDatos==null){ versionDatos=j.v; return; }
     if(j.v===versionDatos) return;
-    if(document.querySelector('.modal-bg.show') || hayCambiosSinGuardar() || pendingJson&&saveTimer) return;
+    if(document.querySelector('.modal-bg.show') || hayCambiosSinGuardar()) return;
     const txt=(await (await fetch('/api/load',{cache:'no-store'})).text()).trim(); if(!txt) return;
     if(txt!==JSON.stringify(db)){ const y=window.scrollY; db=normaliza(JSON.parse(txt)); lastConfirmedJson=JSON.stringify(db); render(); window.scrollTo(0,y); avisoBreve('🔄 Actualizado con los cambios hechos desde el móvil'); }
     versionDatos=j.v;
