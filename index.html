@@ -1137,7 +1137,7 @@ function barsIngGas(groups){
 }
 function renderPanel(){
   const f=panelFiltro; const ms=panelMovs();
-  let ing=0,gas=0; ms.forEach(m=>{if(m.tipo==='ingreso')ing+=+m.importe;else gas+=+m.importe;});
+  let ing=0,gas=0,pend=0; ms.forEach(m=>{if(m.tipo==='ingreso')ing+=+m.importe;else {gas+=pagadoDe(m); pend+=(+m.importe||0)-pagadoDe(m);}});
   const comiOpts=`<option value="">Todos los años</option>`+[...db.comisiones].sort((a,b)=>a.anioInicio-b.anioInicio).map(c=>`<option value="${c.id}" ${f.comi===c.id?'selected':''}>${esc(c.nombre)}</option>`).join('');
   const tiposF=[['','Todas las fiestas'],['halloween','🎃 Halloween'],['santalucia','🕯️ Santa Lucía'],['semanasanta','✝️ Semana Santa'],['sanroque','🐂 San Roque'],['otro','🎪 Otros']];
   const fiestaOpts=tiposF.map(([v,l])=>`<option value="${v}" ${f.fiestaTipo===v?'selected':''}>${l}</option>`).join('');
@@ -1153,19 +1153,20 @@ function renderPanel(){
   </div>`;
   html+=`<div class="grid cols-4" style="margin-bottom:16px">
     <div class="card stat"><span class="k">Ingresos</span><span class="v money pos">${money(ing)}</span></div>
-    <div class="card stat"><span class="k">Gastos</span><span class="v money neg">${money(gas)}</span></div>
+    <div class="card stat"><span class="k">Gastos pagados</span><span class="v money neg">${money(gas)}</span></div>
     <div class="card stat"><span class="k">Resultado</span><span class="v money ${ing-gas>=0?'pos':'neg'}">${money(ing-gas)}</span></div>
     <div class="card stat"><span class="k">Nº movimientos</span><span class="v">${ms.length}</span></div>
   </div>`;
-  const byCat=tipo=>{const map={};ms.filter(m=>m.tipo===tipo).forEach(m=>{const k=m.categoria||'(sin categoría)';map[k]=(map[k]||0)+ +m.importe;});return Object.entries(map).map(([label,value])=>({label,value}));};
+  if(pend>0) html+=`<div class="banner warn" style="margin:-4px 0 16px">⏳ <b>Pendiente de pagar: ${money(pend)}</b> — aún no se cuenta en los gastos ni en el resultado; se sumará cuando se pague.</div>`;
+  const byCat=tipo=>{const map={};ms.filter(m=>m.tipo===tipo).forEach(m=>{const k=m.categoria||'(sin categoría)';map[k]=(map[k]||0)+(m.tipo==='gasto'?pagadoDe(m):+m.importe);});return Object.entries(map).filter(([,v])=>v>0).map(([label,value])=>({label,value}));};
   if(f.tipo==='ingreso') html+=donutBox('Ingresos por categoría',byCat('ingreso'));
   else if(f.tipo==='gasto') html+=donutBox('Gastos por categoría',byCat('gasto'));
   else html+=`<div class="grid cols-2">${donutBox('Gastos por categoría',byCat('gasto'))}${donutBox('Ingresos por categoría',byCat('ingreso'))}</div>`;
   let groups,titulo;
   if(f.comi){const c=db.comisiones.find(x=>x.id===f.comi);titulo='por fiesta';
-    groups=fiestasOrden(c).map(fi=>{let i=0,g=0;ms.filter(m=>m.fiestaId===fi.id).forEach(m=>{if(m.tipo==='ingreso')i+=+m.importe;else g+=+m.importe;});return {label:(EMO[fi.tipo]||'🎪')+' '+fi.nombre,ing:i,gas:g};}).filter(x=>x.ing||x.gas);
+    groups=fiestasOrden(c).map(fi=>{let i=0,g=0;ms.filter(m=>m.fiestaId===fi.id).forEach(m=>{if(m.tipo==='ingreso')i+=+m.importe;else g+=pagadoDe(m);});return {label:(EMO[fi.tipo]||'🎪')+' '+fi.nombre,ing:i,gas:g};}).filter(x=>x.ing||x.gas);
   }else{titulo='por año / comisión';
-    groups=[...db.comisiones].sort((a,b)=>a.anioInicio-b.anioInicio).map(c=>{let i=0,g=0;ms.filter(m=>m.comisionId===c.id).forEach(m=>{if(m.tipo==='ingreso')i+=+m.importe;else g+=+m.importe;});return {label:c.nombre,ing:i,gas:g};}).filter(x=>x.ing||x.gas);
+    groups=[...db.comisiones].sort((a,b)=>a.anioInicio-b.anioInicio).map(c=>{let i=0,g=0;ms.filter(m=>m.comisionId===c.id).forEach(m=>{if(m.tipo==='ingreso')i+=+m.importe;else g+=pagadoDe(m);});return {label:c.nombre,ing:i,gas:g};}).filter(x=>x.ing||x.gas);
   }
   html+=`<div class="card" style="margin-top:16px"><div class="section-title"><h2 style="font-size:16px">Ingresos vs Gastos ${titulo}</h2></div>${groups.length?barsIngGas(groups):'<div class="muted">Sin datos.</div>'}</div>`;
   content.innerHTML=html;
