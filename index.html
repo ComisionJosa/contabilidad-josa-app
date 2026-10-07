@@ -1155,7 +1155,8 @@ function renderPanel(){
     <div class="card stat"><span class="k">Ingresos</span><span class="v money pos">${money(ing)}</span></div>
     <div class="card stat"><span class="k">Gastos pagados</span><span class="v money neg">${money(gas)}</span></div>
     <div class="card stat"><span class="k">Resultado</span><span class="v money ${ing-gas>=0?'pos':'neg'}">${money(ing-gas)}</span></div>
-    <div class="card stat"><span class="k">Nº movimientos</span><span class="v">${ms.length}</span></div>
+  </div>
+  <div class="grid cols-2" style="margin-bottom:16px">
     <div class="card stat"><span class="k">⏳ Gastos sin pagar</span><span class="v" style="color:#f5cf7a">${money(sinPag)}</span><span class="muted" style="font-size:12px">${nSin} gasto${nSin===1?'':'s'} sin pagar nada</span></div>
     <div class="card stat"><span class="k">½ Gastos a medias</span><span class="v" style="color:#f5cf7a">${money(medFalta)}</span><span class="muted" style="font-size:12px">${nMed?`falta por pagar · ya pagado ${money(medPag)}`:'ninguno a medias'}</span></div>
   </div>`;
