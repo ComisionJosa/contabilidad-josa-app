@@ -541,7 +541,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 <script>
 /* ============ CONSTANTES ============ */
 const LS_KEY='contafiestas_db_v1', LS_SNAP='contafiestas_snaps';
-const EMO={halloween:'🎃',santalucia:'🕯️',semanasanta:'✝️',sanroque:'🐂',otro:'🎪'};
+const EMO={halloween:'🎃',santalucia:'🕯️',semanasanta:'✝️',sanroque:'🐂',otro:'🗓️'};
 const CATS_INGRESO=['Barra / Bar','Entradas','Rifas / Sorteos','Lotería','Subvención Ayuntamiento','Cuotas socios','Donaciones','Venta de comida','Merchandising','Otros ingresos'];
 const CATS_GASTO=['Bebida','Comida','Orquesta / Música','DJ','Sonido e iluminación','Alquiler (carpa, mesas, sillas)','Hinchables / Atracciones','Permisos y licencias','Seguros','Pirotecnia / Fuegos','Toros / Vaquillas','Decoración','Publicidad / Carteles','Premios','Limpieza','Transporte','Inversión / Material duradero','Otros gastos'];
 // Lista única de categorías por defecto (gastos + ingresos, sin duplicados)
@@ -579,6 +579,8 @@ function normaliza(d){
   d.stockCats = Array.isArray(d.stockCats)?d.stockCats:[];
   // stock ahora es POR COMISIÓN
   d.comisiones.forEach(c=>{ if(!Array.isArray(c.stock)) c.stock=[]; });
+  // 5ª «fiesta» fija: Otros (ventas entre meses, lotería…). Mismo id en todos los equipos para no duplicarla. Se añade una sola vez.
+  d.comisiones.forEach(c=>{ if(!c.otrosFijo){ const id='otros-'+c.id; if(!c.fiestas.some(f=>f.id===id)) c.fiestas.push({id,tipo:'otro',nombre:'Otros',anio:c.anioInicio,orden:99,activa:true}); c.otrosFijo=true; } });
   // migrar stock global antiguo -> a la comisión más reciente (la que lo tenía)
   if(Array.isArray(d.stock) && d.stock.length && d.comisiones.length){
     const dest=[...d.comisiones].sort((a,b)=>b.anioInicio-a.anioInicio)[0];
@@ -608,11 +610,13 @@ function initDB(){
   d.comisiones.push(c);d.activaId=c.id;return d;
 }
 function buildComision(nombre,start,saldo,stockInicial){
-  return {id:uid(),nombre,anioInicio:start,saldoInicial:Number(saldo)||0,cerrada:false,fiestas:[
+  const cid=uid();
+  return {id:cid,nombre,anioInicio:start,saldoInicial:Number(saldo)||0,cerrada:false,otrosFijo:true,fiestas:[
     {id:uid(),tipo:'halloween',nombre:`Halloween ${start}`,anio:start,orden:1,activa:true},
     {id:uid(),tipo:'santalucia',nombre:`Santa Lucía ${start}`,anio:start,orden:2,activa:true},
     {id:uid(),tipo:'semanasanta',nombre:`Semana Santa ${start+1}`,anio:start+1,orden:3,activa:true},
     {id:uid(),tipo:'sanroque',nombre:`San Roque ${start+1}`,anio:start+1,orden:4,activa:true},
+    {id:'otros-'+cid,tipo:'otro',nombre:'Otros',anio:start,orden:99,activa:true},
   ],
   stock:(stockInicial||[]).map(x=>{ const q=stStock(x); return {id:uid(),nombre:x.nombre,categoria:x.categoria,ref:x.ref||'',precio:(x.precio==null||x.precio==='')?'':Number(x.precio),inicial:q,cantidad:q,movs:[],orden:(x.orden!=null?x.orden:''),unidad:x.unidad||'',minimo:(x.minimo!=null?x.minimo:''),nota:x.nota||''}; })};
 }
@@ -1953,7 +1957,7 @@ function stMigrar(d){
     });
   });
 }
-const ST_ABR={halloween:'Halloween',santalucia:'Sta. Lucía',semanasanta:'S. Santa',sanroque:'S. Roque'};
+const ST_ABR={halloween:'Halloween',santalucia:'Sta. Lucía',semanasanta:'S. Santa',sanroque:'S. Roque',otro:'Otros'};
 function stKey(x){ return normName((x.ref?x.ref+' ':'')+(x.nombre||'')); }
 function stCatsOrden(cats){ const orden=stockCatsAll(); return cats.sort((a,b)=>{const ia=orden.indexOf(a),ib=orden.indexOf(b);return (ia<0?999:ia)-(ib<0?999:ib)||a.localeCompare(b,'es');}); }
 function stFiltra(list){
