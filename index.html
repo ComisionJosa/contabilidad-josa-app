@@ -459,8 +459,13 @@
   <div class="field"><label>Concepto / descripción</label>
     <input type="text" id="mConcepto" placeholder="Ej: Orquesta La Original, cajas de refresco…"></div>
   <div class="field two">
-    <div><label>Método de pago</label><select id="mMetodo"><option>Banco</option><option>Bizum</option><option>Efectivo</option></select></div>
+    <div><label>Método de pago</label><select id="mMetodo"><option>Banco</option><option>Bizum</option><option>Efectivo</option><option value="Repartido">➗ Repartido (varios métodos)</option></select></div>
     <div><label>Proveedor / quién (opcional)</label><input type="text" id="mProveedor"></div>
+  </div>
+  <div class="field" id="repartoWrap" style="display:none">
+    <label>➗ Cómo se ha pagado <span class="muted" style="font-weight:400">(cada parte con su método)</span></label>
+    <div id="repartoFilas" style="display:flex;flex-direction:column;gap:6px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap"><button type="button" class="ghost" onclick="repAdd()">＋ Añadir otra parte</button><span id="repartoSuma" style="font-size:13px"></span></div>
   </div>
   <div class="field two" id="pagoRow">
     <div><label>Estado del pago</label><select id="mEstadoPago"><option value="pagado">✅ Pagado</option><option value="parcial">½ Pagado a medias</option><option value="pendiente">⏳ Pendiente de pagar</option></select></div>
@@ -1194,7 +1199,7 @@ function renderMovs(){
   if(f.texto){const q=f.texto.toLowerCase();movs=movs.filter(m=>((m.concepto||'')+' '+(m.categoria||'')+' '+(m.proveedor||'')).toLowerCase().includes(q));}
   if(f.estado)movs=movs.filter(m=>m.tipo==='gasto' && (m.estadoPago||'pagado')===f.estado);
   if(f.categoria)movs=movs.filter(m=>(m.categoria||'')===f.categoria);
-  if(f.metodo)movs=movs.filter(m=>(m.metodo||'')===f.metodo);
+  if(f.metodo)movs=movs.filter(m=>usaMetodo(m,f.metodo));
   if(f.desde)movs=movs.filter(m=>(m.fecha||'')>=f.desde);
   if(f.hasta)movs=movs.filter(m=>(m.fecha||'')<=f.hasta);
   movs.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
@@ -1231,7 +1236,7 @@ function renderMovs(){
         <td><span class="tag ${m.tipo==='ingreso'?'in':'out'}">${m.tipo==='ingreso'?'Ingreso':'Gasto'}</span></td>
         <td>${esc(m.categoria||'')}</td>
         <td>${esc(m.concepto||'')}${m.proveedor?`<br><span class="muted" style="font-size:12px">${esc(m.proveedor)}</span>`:''}</td>
-        <td class="muted">${esc(m.metodo||'')}</td>
+        <td class="muted">${esc(metodoTxt(m))}</td>
         <td class="amt money ${m.tipo==='ingreso'?'pos':'neg'}">${m.tipo==='gasto'?'-':''}${money(m.importe)}${(m.tipo==='gasto'&&(m.estadoPago==='pendiente'||m.estadoPago==='parcial'))?`<br><span class="muted" style="font-size:11px;font-weight:600">${m.estadoPago==='pendiente'?'⏳ sin pagar':'½ pagado '+money(+m.pagado||0)}</span>`:''}</td>
         <td style="white-space:nowrap;text-align:center">${adjuntosDe(m).length
           ? `<button class="icon-btn adj-si" onclick="openDocs('${m.id}')" title="Ver, añadir o quitar documentos">📎 ${adjuntosDe(m).length}</button>`
@@ -1337,7 +1342,7 @@ function detallePanel(tipo){
   document.getElementById('detCuerpo').innerHTML=`<div class="muted" style="font-size:13px">${lista.length} movimiento${lista.length===1?'':'s'} · total ${tipo==='parcial'?'que falta por pagar':''} <b class="money ${color}" style="${color?'':'color:#f5cf7a'}">${money(total)}</b></div>`+
     (lista.length?`<div class="det-lista">${lista.map(m=>{
       const extra = tipo==='parcial' ? `de ${money(+m.importe||0)} · pagado ${money(pagadoDe(m))}`
-                  : (tipo==='pagado' && est(m)==='parcial') ? `pagado a medias (de ${money(+m.importe||0)})` : (m.metodo||'');
+                  : (tipo==='pagado' && est(m)==='parcial') ? `pagado a medias (de ${money(+m.importe||0)})` : metodoTxt(m);
       return `<div class="det-fila"><span class="c">${esc(m.concepto||'(sin concepto)')}</span><span class="i money ${color}" style="${color?'':'color:#f5cf7a'}">${money(T[2](m))}</span>
         <span class="s">${fmtFecha(m.fecha)} · ${esc(fiestaDe(m))}${m.categoria?' · '+esc(m.categoria):''}${m.proveedor?' · '+esc(m.proveedor):''}</span><span class="s2">${esc(extra)}</span></div>`; }).join('')}</div>`
     :`<div class="card empty" style="margin-top:10px">No hay ninguno con los filtros actuales.</div>`);
@@ -1608,7 +1613,7 @@ function openMov(id){
     document.getElementById('mFecha').value=m.fecha||'';document.getElementById('mImporte').value=m.importe;
     if(!acts.find(f=>f.id===m.fiestaId)){const ff=c.fiestas.find(f=>f.id===m.fiestaId);if(ff)document.getElementById('mFiesta').innerHTML+=`<option value="${ff.id}">${EMO[ff.tipo]||'🎪'} ${esc(ff.nombre)}</option>`;}
     document.getElementById('mFiesta').value=m.fiestaId;setMovCat(m.categoria||'');
-    document.getElementById('mConcepto').value=m.concepto||'';document.getElementById('mMetodo').value=m.metodo||'Banco';
+    document.getElementById('mConcepto').value=m.concepto||'';document.getElementById('mMetodo').value=m.metodo||'Banco'; repPartes=(Array.isArray(m.pagos)?m.pagos.map(p=>({metodo:p.metodo,importe:p.importe})):[]);
     document.getElementById('mProveedor').value=m.proveedor||'';document.getElementById('mNota').value=m.nota||'';
     document.getElementById('mEstadoPago').value=(m.tipo==='gasto'?(m.estadoPago||'pagado'):'pagado');document.getElementById('mPagado').value=(m.pagado!=null?m.pagado:'');syncPagoUI();
     movRecibos=adjuntosDe(m).map(a=>({src:a.src,kind:a.kind,nombre:a.nombre||''})); renderReciboBox();
@@ -1616,14 +1621,57 @@ function openMov(id){
     document.getElementById('mFecha').value=new Date().toISOString().slice(0,10);
     ['mImporte','mConcepto','mProveedor','mNota'].forEach(x=>document.getElementById(x).value='');
     document.getElementById('mEstadoPago').value='pagado';document.getElementById('mPagado').value='';syncPagoUI();
-    document.getElementById('mMetodo').value='Banco';
+    document.getElementById('mMetodo').value='Banco'; repPartes=[]; syncMetodoUI();
     movRecibos=[]; renderReciboBox();
     if(state.filtro.fiesta&&acts.find(f=>f.id===state.filtro.fiesta))document.getElementById('mFiesta').value=state.filtro.fiesta;}
   showModal('movModal');document.getElementById('mImporte').focus();
 }
 function setTipo(t){state.movTipo=t;document.querySelectorAll('#tipoSeg button').forEach(b=>{b.classList.remove('active-in','active-out');if(b.dataset.tipo===t)b.classList.add(t==='ingreso'?'active-in':'active-out');});syncPagoUI();}
-function syncPagoUI(){const row=document.getElementById('pagoRow');if(!row)return;const esGasto=state.movTipo==='gasto';row.style.display=esGasto?'':'none';const est=document.getElementById('mEstadoPago').value;document.getElementById('pagoParcialWrap').style.display=(esGasto&&est==='parcial')?'':'none';}
-document.getElementById('mEstadoPago').onchange=syncPagoUI;
+/* ---- Pago repartido en varios métodos (p.ej. 5000 € banco + 5000 € efectivo) ---- */
+let repPartes=[];
+const METODOS=['Banco','Bizum','Efectivo'];
+function metodoTxt(m){ return (Array.isArray(m.pagos)&&m.pagos.length) ? m.pagos.map(p=>p.metodo+' '+money(p.importe)).join(' + ') : (m.metodo||''); }
+function usaMetodo(m,met){ return (m.metodo||'')===met || (Array.isArray(m.pagos) && m.pagos.some(p=>p.metodo===met)); }
+function repObjetivo(){
+  const imp=parseFloat(document.getElementById('mImporte').value)||0;
+  if(state.movTipo!=='gasto') return imp;
+  const est=document.getElementById('mEstadoPago').value;
+  if(est==='parcial') return parseFloat(document.getElementById('mPagado').value)||0;
+  if(est==='pendiente') return 0;
+  return imp;
+}
+function repPintar(){
+  const box=document.getElementById('repartoFilas');
+  box.innerHTML=repPartes.map((p,i)=>`<div style="display:flex;gap:6px;align-items:center">
+    <select data-i="${i}" class="repMet" style="flex:1">${METODOS.map(x=>`<option ${p.metodo===x?'selected':''}>${x}</option>`).join('')}</select>
+    <input type="number" step="0.01" min="0" data-i="${i}" class="repImp" value="${p.importe===''||p.importe==null?'':p.importe}" placeholder="Importe €" style="flex:1">
+    ${repPartes.length>1?`<button type="button" class="icon-btn danger" onclick="repQuitar(${i})" title="Quitar esta parte">✕</button>`:''}</div>`).join('');
+  box.querySelectorAll('.repMet').forEach(el=>el.onchange=()=>{ repPartes[+el.dataset.i].metodo=el.value; });
+  box.querySelectorAll('.repImp').forEach(el=>el.oninput=()=>{ repPartes[+el.dataset.i].importe=el.value; repSuma(); });
+  repSuma();
+}
+function repSuma(){
+  const el=document.getElementById('repartoSuma'); if(!el) return;
+  const suma=repPartes.reduce((t,p)=>t+(parseFloat(p.importe)||0),0), obj=repObjetivo();
+  const est=state.movTipo==='gasto'?document.getElementById('mEstadoPago').value:'pagado';
+  if(est==='pendiente'){ el.innerHTML='<span style="color:#f5cf7a">⏳ Está «pendiente de pagar»: aún no hay pagos que repartir</span>'; return; }
+  const dif=Math.round((obj-suma)*100)/100;
+  el.innerHTML = Math.abs(dif)<0.005 ? `<span style="color:var(--green)">✅ Suma ${money(suma)} de ${money(obj)}</span>`
+    : `<span style="color:${dif>0?'#f5cf7a':'var(--red)'}">Suma ${money(suma)} de ${money(obj)} · ${dif>0?'faltan '+money(dif):'sobran '+money(-dif)}</span>`;
+}
+function repAdd(){ const usados=repPartes.map(p=>p.metodo); repPartes.push({metodo:METODOS.find(x=>!usados.includes(x))||'Efectivo', importe:''}); repPintar(); }
+function repQuitar(i){ repPartes.splice(i,1); repPintar(); }
+function syncMetodoUI(){
+  const rep=document.getElementById('mMetodo').value==='Repartido';
+  document.getElementById('repartoWrap').style.display=rep?'':'none';
+  if(rep && !repPartes.length){ const o=repObjetivo(); const mitad=o?Math.round(o/2*100)/100:''; repPartes=[{metodo:'Banco',importe:mitad},{metodo:'Efectivo',importe:o?Math.round((o-mitad)*100)/100:''}]; }
+  if(rep) repPintar();
+}
+document.getElementById('mMetodo').onchange=syncMetodoUI;
+document.getElementById('mImporte').addEventListener('input',()=>repSuma());
+document.getElementById('mPagado').addEventListener('input',()=>repSuma());
+function syncPagoUI(){ try{ syncMetodoUI(); }catch(_){} const row=document.getElementById('pagoRow');if(!row)return;const esGasto=state.movTipo==='gasto';row.style.display=esGasto?'':'none';const est=document.getElementById('mEstadoPago').value;document.getElementById('pagoParcialWrap').style.display=(esGasto&&est==='parcial')?'':'none';}
+document.getElementById('mEstadoPago').onchange=()=>{ syncPagoUI(); repSuma(); };
 document.querySelectorAll('#tipoSeg button').forEach(b=>b.onclick=()=>setTipo(b.dataset.tipo));
 document.getElementById('mGuardar').onclick=()=>{
   if(esCerrada()){alert('🔒 Comisión cerrada.');return;}
@@ -1642,7 +1690,15 @@ document.getElementById('mGuardar').onclick=()=>{
     else{pag=parseFloat(document.getElementById('mPagado').value);if(isNaN(pag)||pag<0)pag=0;if(pag>imp)pag=imp;if(pag<=0)est='pendiente';else if(pag>=imp)est='pagado';}
     data.estadoPago=est;data.pagado=pag;}
   else{data.estadoPago=undefined;data.pagado=undefined;}
-  if(state.editMovId){const t=db.movimientos.find(x=>x.id===state.editMovId);Object.assign(t,data);delete t.recibo;}
+  if(data.metodo==='Repartido'){
+    if(data.tipo==='gasto' && data.estadoPago==='pendiente'){ alert('Este gasto está «pendiente de pagar», así que todavía no hay pagos que repartir.\nCambia el estado del pago o elige un solo método.'); return; }
+    const partes=repPartes.map(p=>({metodo:p.metodo, importe:Math.round((parseFloat(p.importe)||0)*100)/100})).filter(p=>p.importe>0);
+    const obj=data.tipo==='gasto'?(+data.pagado||0):imp, suma=Math.round(partes.reduce((t,p)=>t+p.importe,0)*100)/100;
+    if(partes.length<1){ alert('Pon el importe de cada parte del pago.'); return; }
+    if(Math.abs(suma-obj)>0.005){ alert(`Las partes suman ${money(suma)} y deberían sumar ${money(obj)}${data.tipo==='gasto'&&data.estadoPago==='parcial'?' (lo ya pagado)':''}.\nRevisa los importes.`); return; }
+    data.pagos=partes;
+  } else data.pagos=undefined;
+  if(state.editMovId){const t=db.movimientos.find(x=>x.id===state.editMovId);Object.assign(t,data);delete t.recibo;if(!t.pagos)delete t.pagos;}
   else{db.movimientos.push({id:uid(),...data});}
   if(save()){closeModal('movModal');render();}
 };
@@ -2905,7 +2961,7 @@ function exportExcel(){
       <td>${esc(m.categoria||'')}</td>
       <td>${esc(m.concepto||'')}</td>
       <td>${esc(m.proveedor||'')}</td>
-      <td>${esc(m.metodo||'')}</td>
+      <td>${esc(metodoTxt(m))}</td>
       <td class="ing">${m.tipo==='ingreso'?numES(m.importe):''}</td>
       <td class="gas">${m.tipo==='gasto'?numES(m.importe):''}</td>
     </tr>`;
