@@ -528,15 +528,8 @@
     <div style="flex:2"><label>¿A quién?</label><input type="text" id="psPersona" placeholder="Nombre y apellidos" list="psPersonas"><datalist id="psPersonas"></datalist></div>
     <div><label>Fecha del préstamo</label><input type="date" id="psFecha"></div>
   </div>
-  <div class="field two">
-    <div><label>Teléfono (opcional)</label><input type="tel" id="psTel" placeholder="600 000 000"></div>
-    <div><label>DNI (opcional)</label><input type="text" id="psDni" placeholder=""></div>
-    <div><label>Devolver antes de (opcional)</label><input type="date" id="psPrevista"></div>
-  </div>
-  <div class="field two">
-    <div><label>Lo entrega (de la comisión)</label><input type="text" id="psEntrega" placeholder="Nombre de quien lo deja" list="psEntregas"><datalist id="psEntregas"></datalist></div>
-    <div style="flex:2"><label>Notas / estado del material (opcional)</label><input type="text" id="psNotas" placeholder="Ej: se entrega limpia y sin golpes"></div>
-  </div>
+  <div class="field"><label>Notas / estado del material (opcional)</label><input type="text" id="psNotas" placeholder="Ej: se entrega limpia y sin golpes"></div>
+  <datalist id="psEntregas"></datalist>
   <div class="field"><label>✍️ Firma de quien lo recibe</label>
     <div class="firma-box" id="psFirmaBox"><div class="linea"></div><div class="ph">Firme aquí con el dedo o el ratón</div><canvas></canvas></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span class="muted" style="font-size:12px" id="psFirmaInfo"></span><button type="button" class="ghost" onclick="firmaPs.limpiar()">↺ Borrar firma</button></div>
@@ -2060,10 +2053,6 @@ function openPrestamo(id){
   document.getElementById('psObjetos').value=v('objetos');
   document.getElementById('psPersona').value=v('persona');
   document.getElementById('psFecha').value=v('fecha',hoyYMD());
-  document.getElementById('psTel').value=v('telefono');
-  document.getElementById('psDni').value=v('dni');
-  document.getElementById('psPrevista').value=v('prevista');
-  document.getElementById('psEntrega').value=v('entrega');
   document.getElementById('psNotas').value=v('notas');
   showModal('presModal');
   if(!firmaPs) firmaPs=crearFirma('psFirmaBox');
@@ -2715,7 +2704,7 @@ document.getElementById('psGuardar').onclick=()=>{
   const prev=presEditId?prestamos().find(x=>x.id===presEditId):null;
   const firmaNueva=firmaPs&&!firmaPs.vacia()?firmaPs.png():'';
   if(!firmaNueva && !(prev&&prev.firma) && !confirm('No ha firmado nadie. ¿Guardar el préstamo sin firma? (se puede firmar después editándolo)')) return;
-  const data={objetos:document.getElementById('psObjetos').value.split('\n').map(x=>x.trim()).filter(Boolean).join('\n'), persona:g('psPersona'), fecha:g('psFecha')||hoyYMD(), telefono:g('psTel'), dni:g('psDni'), prevista:g('psPrevista'), entrega:g('psEntrega'), notas:g('psNotas'), mod:new Date().toISOString()};
+  const data={objetos:document.getElementById('psObjetos').value.split('\n').map(x=>x.trim()).filter(Boolean).join('\n'), persona:g('psPersona'), fecha:g('psFecha')||hoyYMD(), notas:g('psNotas'), mod:new Date().toISOString()};
   if(firmaNueva){ data.firma=firmaNueva; data.firmadoEl=new Date().toISOString(); }
   let id=presEditId;
   if(prev){ Object.assign(prev,data); }
