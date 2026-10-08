@@ -277,6 +277,7 @@
   body.solo-lectura #movilCard{display:none !important}
   body.solo-lectura .adj-no{display:none !important}
   body.solo-lectura #btnAjustes{display:none !important}
+  body.sin-conectar header button, body.sin-conectar header .comi-pick{display:none !important}
   body.solo-lectura header [onclick*="guia.html"]{display:none !important}
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
   body.solo-lectura .ro-badge{display:inline-block}
@@ -913,15 +914,28 @@ async function ghRefrescar(){
     if(rem.txt!==JSON.stringify(db)){ const y=window.scrollY, miActiva=db.activaId; db=normaliza(JSON.parse(rem.txt)); if(soloLectura && db.comisiones.some(c=>c.id===miActiva)) db.activaId=miActiva; lastConfirmedJson=JSON.stringify(db); try{localStorage.setItem(LS_KEY,lastConfirmedJson);}catch(_){} render(); window.scrollTo(0,y); avisoBreve('🔄 Actualizado con los cambios del portátil'); }
   }catch(_){}
 }
-function ghConfigDeEnlace(){
-  const m=/[#&]conectar=([^&]+)/.exec(location.hash||''); if(!m) return;
+const ES_IOS=/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const ES_INSTALADA=(window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true;
+/* Guarda la conexión que viene en un enlace (#conectar=…) o en un texto pegado (enlace completo o llave). Devuelve true si vale. */
+function guardarConexion(texto){
+  texto=String(texto||'').trim(); if(!texto) return false;
+  const m=/conectar=([^&\s]+)/.exec(texto);
   try{
-    const c=JSON.parse(b64aUtf8(decodeURIComponent(m[1])));
-    if(c&&c.t){ localStorage.setItem(GH_KEY,JSON.stringify({t:c.t,o:c.o||'ComisionJosa',r:c.r||'contabilidad-fiestas',b:c.b||'main',ro:!!c.ro})); }
+    if(m){ const c=JSON.parse(b64aUtf8(decodeURIComponent(m[1])));
+      if(c&&c.t){ localStorage.setItem(GH_KEY,JSON.stringify({t:c.t,o:c.o||'ComisionJosa',r:c.r||'contabilidad-fiestas',b:c.b||'main',ro:!!c.ro})); return true; } }
+    else if(/^(github_pat_|ghp_)/.test(texto)){ localStorage.setItem(GH_KEY,JSON.stringify({t:texto,o:'ComisionJosa',r:'contabilidad-fiestas',b:'main'})); return true; }
   }catch(_){}
+  return false;
+}
+function ghConfigDeEnlace(){
+  if(!/[#&]conectar=/.test(location.hash||'')) return;
+  guardarConexion(location.hash);
+  // En iPhone/iPad (en Safari, sin instalar) se deja el enlace en la dirección: así «Añadir a pantalla de inicio» se lo lleva
+  if(ES_IOS && !ES_INSTALADA) return;
   history.replaceState(null,'',location.pathname+location.search);
 }
 function pantallaConectar(error){
+  document.body.classList.add('sin-conectar');
   document.getElementById('nav').style.display='none';
   content.innerHTML=`<div class="card" style="max-width:560px;margin:30px auto">
     <h2 style="margin-top:0">📱 Conectar este móvil</h2>
@@ -929,10 +943,14 @@ function pantallaConectar(error){
     <p>Para ver y apuntar las cuentas desde el móvil, conecta este móvil con la comisión <b>una sola vez</b>:</p>
     <ol style="line-height:1.7"><li>En el <b>portátil</b>, abre el programa y pulsa el <b>⚙️</b> (arriba a la derecha).</li>
     <li>En «📱 Usar en el móvil», pulsa <b>Mostrar QR</b>.</li><li>Escanea el QR con la cámara de este móvil.</li></ol>
-    <details style="margin-top:14px"><summary class="muted" style="cursor:pointer">¿No puedes escanear? Pega aquí la llave</summary>
-      <div class="field" style="margin-top:10px"><input type="password" id="llaveManual" placeholder="github_pat_…"></div>
-      <button class="primary" onclick="(function(){const t=document.getElementById('llaveManual').value.trim(); if(!t)return; localStorage.setItem(GH_KEY,JSON.stringify({t,o:'ComisionJosa',r:'contabilidad-fiestas',b:'main'})); location.reload();})()">Conectar</button>
-    </details></div>`;
+    <div class="card" style="background:var(--panel2);margin-top:16px">
+      <b>📋 ¿Te han mandado un enlace por WhatsApp?</b>
+      <p class="muted" style="font-size:13px;margin:6px 0 10px">Mantén pulsado el enlace en WhatsApp → <b>Copiar</b>, y pégalo aquí:</p>
+      <div class="field" style="margin:0 0 10px"><input type="text" id="llaveManual" placeholder="Pega aquí el enlace (o la llave github_pat_…)" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <button class="primary" onclick="(function(){ if(guardarConexion(document.getElementById('llaveManual').value)) location.replace(location.pathname+location.search); else alert('Eso no parece el enlace de la app. Copia el enlace completo que te mandaron (empieza por https://comisionjosa.github.io…).'); })()">Conectar</button>
+    </div>
+    ${ES_IOS?`<p class="muted" style="font-size:12.5px;margin-top:14px">📱 <b>En iPhone:</b> para tener el icono, abre la app en <b>Safari</b> → botón <b>Compartir</b> (cuadrado con flecha) → <b>Añadir a pantalla de inicio</b>.</p>`:''}
+    </div>`;
 }
 async function bootMovil(){
   document.title='Cont. Josa';
@@ -1553,7 +1571,7 @@ function pintarMovilCard(){
 let ultimoEnlaceRO='';
 function enviarRoWhatsApp(){
   if(!ultimoEnlaceRO) return;
-  const msg='📱 App de la Comisión de Fiestas de Josa (solo para ver las cuentas, el stock, las anotaciones...).\n\n1️⃣ Abre este enlace en el móvil (con Chrome):\n'+ultimoEnlaceRO+'\n\n2️⃣ Cuando se abra, pulsa el menú ⋮ de arriba a la derecha → «Instalar aplicación».\n\nYa tendrás el icono «Cont. Josa» en el móvil. No se puede cambiar nada, solo ver.';
+  const msg='📱 App de la Comisión de Fiestas de Josa (solo para ver las cuentas, el stock, las anotaciones...).\n\n1️⃣ Abre este enlace en el móvil (con Chrome):\n'+ultimoEnlaceRO+'\n\n2️⃣ Cuando se abra, pulsa el menú ⋮ de arriba a la derecha → «Instalar aplicación».\n\n🍏 En iPhone: abre el enlace en Safari → botón Compartir (cuadrado con flecha) → «Añadir a pantalla de inicio». Si al abrir el icono te pide conectar, copia este mismo enlace y pégalo en el recuadro.\n\nYa tendrás el icono «Cont. Josa» en el móvil. No se puede cambiar nada, solo ver.';
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 function mostrarQRMovil(ro){
