@@ -276,6 +276,7 @@
   body.solo-lectura #docsAdd, body.solo-lectura .tb-movs .primary, body.solo-lectura .st-mov,
   body.solo-lectura #movilCard{display:none !important}
   body.solo-lectura .adj-no{display:none !important}
+  body.solo-lectura #btnAjustes{display:none !important}
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
   body.solo-lectura .ro-badge{display:inline-block}
   /* App del móvil: en Movimientos solo el filtro de fiesta (el resto, en el ordenador) */
@@ -1112,7 +1113,7 @@ function medirBarras(){
 window.addEventListener('resize',medirBarras);
 /* Ajustes = pantalla aparte (sin pestañas), con botón Cerrar que vuelve a donde estabas */
 let tabAntesAjustes='resumen';
-function abrirAjustes(){ if(state.tab==='ajustes'){ cerrarAjustes(); return; } tabAntesAjustes=state.tab||'resumen'; state.tab='ajustes'; render(); window.scrollTo(0,0); }
+function abrirAjustes(){ if(soloLectura) return; if(state.tab==='ajustes'){ cerrarAjustes(); return; } tabAntesAjustes=state.tab||'resumen'; state.tab='ajustes'; render(); window.scrollTo(0,0); }
 function cerrarAjustes(){ state.tab=(tabAntesAjustes&&tabAntesAjustes!=='ajustes')?tabAntesAjustes:'resumen'; render(); window.scrollTo(0,0); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && state.tab==='ajustes' && !document.querySelector('.modal-bg.show')) cerrarAjustes(); });
 function render(){
