@@ -800,7 +800,20 @@ function movsDe(id){return db.movimientos.filter(m=>m.comisionId===id);}
 function esCerrada(){const c=activa();return c&&c.cerrada;}
 
 /* ============ ARRANQUE / CARGA ============ */
+/* ---- Admin: ver la app como la ve el resto (solo lectura), sin tocar la llave ---- */
+function verComoSoloLectura(){ try{ sessionStorage.setItem('cf_ver_ro','1'); }catch(_){} location.reload(); }
+function salirVistaSoloLectura(){ try{ sessionStorage.removeItem('cf_ver_ro'); }catch(_){} location.reload(); }
+function aplicarVistaSoloLectura(){
+  let on=false; try{ on=sessionStorage.getItem('cf_ver_ro')==='1'; }catch(_){}
+  if(!on) return;
+  soloLectura=true; document.body.classList.add('solo-lectura');
+  const d=document.createElement('div');
+  d.style.cssText='position:sticky;top:0;z-index:30;background:#4b3a6b;color:#fff;padding:8px 14px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:13.5px';
+  d.innerHTML='👀 Estás viendo la app <b>como la ven los demás</b> (solo lectura). No se guarda nada. <button class="primary" style="padding:5px 12px" onclick="salirVistaSoloLectura()">↩ Volver a admin</button>';
+  document.body.prepend(d);
+}
 async function boot(){
+  aplicarVistaSoloLectura();
   // limpieza única (6-10-2026): borrar las copias internas antiguas del navegador; los datos buenos están en GitHub
   try{ if(!localStorage.getItem('cf_limpieza_20261006')){ localStorage.removeItem(LS_SNAP); localStorage.setItem('cf_limpieza_20261006','1'); } }catch(_){}
   if(ES_APP_MOVIL){ await bootMovil(); return; }
@@ -967,7 +980,7 @@ async function bootMovil(){
   if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
   if(!GH||!GH.t){ db=initDB(); pantallaConectar(); return; }
   ghMode=true;
-  soloLectura=!!GH.ro;
+  soloLectura=!!GH.ro || soloLectura;
   if(soloLectura){ document.body.classList.add('solo-lectura'); document.title='Cont. Josa · ver'; }
   try{
     const rem=await ghLeerDatos(); ghSha=rem.sha;
@@ -1541,6 +1554,9 @@ function renderAjustes(){
     </div>
   </div>`;
   document.getElementById('importFile').onchange=importJSON;
+  if(!soloLectura){ const g=document.querySelector('#content .grid'); if(g && !document.getElementById('verRoCard')){ const d=document.createElement('div'); d.className='card'; d.id='verRoCard'; d.style.gridColumn='1/-1';
+    d.innerHTML='<div class="section-title"><h2 style="font-size:17px">👀 Ver como los demás</h2></div><p class="muted">Mira la app tal cual la ven los de la comisión con la app de solo lectura (sin botones de cambiar nada). No se guarda nada mientras estás en esa vista.</p><button class="primary" onclick="verComoSoloLectura()">👀 Ver como solo lectura</button>';
+    g.prepend(d); } }
   if(serverMode) cargarInfoCarpeta();
   if(serverMode) pintarMovilCard();
 }
