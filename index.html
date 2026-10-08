@@ -567,7 +567,7 @@
 </div></div>
 
 <!-- DOCUMENTO FORMAL DEL PRÉSTAMO -->
-<div id="docPres"><div class="barra"><button class="primary" onclick="imprimirDocPres()">🖨️ Imprimir / Guardar PDF</button><button onclick="cerrarDocPres()">✕ Cerrar</button></div><div id="docPresHoja"></div></div>
+<div id="docPres"><div class="barra"><button class="primary" id="btnPdfPres" onclick="pdfPrestamo(docPresId)">⬇️ Descargar PDF</button><button onclick="cerrarDocPres()">✕ Cerrar</button></div><div id="docPresHoja"></div></div>
 
 <!-- MODAL PREMIO / CONCURSO -->
 <div class="modal-bg" id="premioModal"><div class="modal" style="max-width:720px">
@@ -2094,8 +2094,10 @@ function delPrestamo(id){
   save(); renderPrestamos();
 }
 /* Documento formal de la Comisión de Fiestas de Josa */
+let docPresId=null;
 function verDocPrestamo(id){
   const p=prestamos().find(x=>x.id===id); if(!p) return;
+  docPresId=id;
   const dev=p.estado==='devuelto';
   const fLarga=f=>{ if(!f) return '—'; const d=new Date(f+'T12:00:00'); return d.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); };
   const filasObj=presObjetos(p).map(o=>`<tr><td>${esc(o)}</td></tr>`).join('')||'<tr><td>—</td></tr>';
@@ -2133,6 +2135,88 @@ function verDocPrestamo(id){
   document.getElementById('docPres').scrollTop=0;
 }
 function cerrarDocPres(){ document.getElementById('docPres').classList.remove('show'); }
+/* ---- PDF del préstamo generado directamente (sin imprimir): jsPDF se carga de internet solo al pulsar ---- */
+let jsPDFCargando=null;
+function cargarJsPDF(){
+  if(window.jspdf) return Promise.resolve();
+  if(jsPDFCargando) return jsPDFCargando;
+  jsPDFCargando=new Promise((ok,ko)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    sc.onload=()=>ok(); sc.onerror=()=>{ jsPDFCargando=null; ko(new Error('sin conexión')); }; document.head.appendChild(sc); });
+  return jsPDFCargando;
+}
+function tamImagen(src){ return new Promise(r=>{ const i=new Image(); i.onload=()=>r({w:i.naturalWidth||1,h:i.naturalHeight||1}); i.onerror=()=>r({w:3,h:1}); i.src=src; }); }
+async function pdfPrestamo(id){
+  const p=prestamos().find(x=>x.id===id); if(!p) return;
+  const btn=document.getElementById('btnPdfPres'); const txt=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Creando PDF…'; }
+  try{ await cargarJsPDF(); }
+  catch(e){ if(btn){ btn.disabled=false; btn.textContent=txt; } alert('Para crear el PDF hace falta conexión a internet (solo la primera vez que se usa). Conéctate y vuelve a probar.'); return; }
+  try{
+    const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+    const W=210, M=18, AN=W-2*M; let y=18;
+    const dev=p.estado==='devuelto';
+    const fL=f=>{ if(!f) return '—'; const d=new Date(f+'T12:00:00'); return d.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); };
+    const salto=h=>{ if(y+h>282){ doc.addPage(); y=18; } };
+    const fuente=(est,tam,col)=>{ doc.setFont('times',est); doc.setFontSize(tam); doc.setTextColor(...(col||[17,17,17])); };
+    const parrafo=(t,tam)=>{ fuente('normal',tam||11); const l=doc.splitTextToSize(t,AN); salto(l.length*5); doc.text(l,M,y); y+=l.length*5+2; };
+    const fila=(et,val,negrita)=>{ fuente('normal',10.5); const l=doc.splitTextToSize(String(val||'—'),AN*0.64-4); const h=Math.max(8,l.length*5+3); salto(h);
+      doc.setDrawColor(170); doc.setFillColor(242,242,242); doc.rect(M,y,AN*0.36,h,'FD'); doc.rect(M+AN*0.36,y,AN*0.64,h);
+      fuente('bold',10.5); doc.text(et,M+3,y+5.4); fuente(negrita?'bold':'normal',10.5); doc.text(l,M+AN*0.36+3,y+5.4); y+=h; };
+    const sello=(t,x,yy,verde)=>{ const c=verde?[19,122,55]:[183,121,31]; doc.setFont('helvetica','bold'); doc.setFontSize(9.5); const w=doc.getTextWidth(t)+8;
+      doc.setDrawColor(...c); doc.setLineWidth(0.7); doc.roundedRect(x,yy-5,w,7,1.5,1.5); doc.setTextColor(...c); doc.text(t,x+4,yy); doc.setLineWidth(0.2); return w; };
+    const firma=async(src,x,yy,ancho,alto)=>{ if(!src) return; const t=await tamImagen(src); let w=ancho, h=w*t.h/t.w; if(h>alto){ h=alto; w=h*t.w/t.h; } doc.addImage(src,'PNG',x+(ancho-w)/2,yy+alto-h,w,h); };
+    // Cabecera
+    fuente('bold',15); doc.text('Comisión de Fiestas de Josa',M,y+2);
+    fuente('normal',9.5,[90,90,90]); doc.text('Josa (Teruel)',M,y+7);
+    fuente('normal',9.5,[60,60,60]); doc.text('Documento nº',W-M,y,{align:'right'});
+    fuente('bold',13); doc.text(String(p.numero||''),W-M,y+6,{align:'right'});
+    fuente('normal',9.5,[60,60,60]); doc.text(fL(p.fecha),W-M,y+11,{align:'right'});
+    y+=15; doc.setDrawColor(40); doc.setLineWidth(0.5); doc.line(M,y,W-M,y); doc.line(M,y+1.1,W-M,y+1.1); doc.setLineWidth(0.2); y+=9;
+    fuente('bold',13); doc.text('JUSTIFICANTE DE PRÉSTAMO DE MATERIAL',W/2,y,{align:'center'}); y+=8;
+    parrafo('La Comisión de Fiestas de Josa hace constar que, en la fecha indicada, entrega en préstamo el material que se detalla a continuación a la persona que firma este documento.');
+    y+=1;
+    fila('Persona que lo recibe',p.persona,true);
+    fila('Fecha del préstamo',fL(p.fecha));
+    if(p.notas) fila('Observaciones',p.notas);
+    y+=4; salto(9); doc.setFillColor(242,242,242); doc.setDrawColor(170); doc.rect(M,y,AN,8,'FD'); fuente('bold',10.5); doc.text('Material prestado',M+3,y+5.4); y+=8;
+    presObjetos(p).forEach(o=>{ fuente('normal',10.5); const l=doc.splitTextToSize(o,AN-6); const h=Math.max(8,l.length*5+3); salto(h); doc.rect(M,y,AN,h); doc.text(l,M+3,y+5.4); y+=h; });
+    y+=5;
+    parrafo('La persona que recibe el material se compromete a cuidarlo, a darle un uso adecuado y a devolverlo a la Comisión de Fiestas en el mismo estado en que lo recibe. En caso de pérdida o deterioro, se compromete a reponerlo o a abonar su valor.');
+    // Firmas de la entrega
+    y+=3; salto(42);
+    const colW=(AN-14)/2;
+    await firma(p.firma,M,y,colW,26);
+    const xd=M+colW+14; sello('COMISIÓN DE FIESTAS · JOSA',xd+(colW-62)/2,y+22,dev);
+    y+=28; doc.setDrawColor(40); doc.line(M,y,M+colW,y); doc.line(xd,y,xd+colW,y);
+    fuente('normal',9.5); doc.text('Firma de quien recibe el material',M+colW/2,y+5,{align:'center'}); doc.text('Por la Comisión de Fiestas',xd+colW/2,y+5,{align:'center'});
+    fuente('bold',10); doc.text(String(p.persona||''),M+colW/2,y+10,{align:'center'});
+    y+=18;
+    // Devolución (bloque entero)
+    const altoDev = dev ? (8+3*8+(p.firmaDev?44:4)) : 26;
+    if(y+altoDev>282){ doc.addPage(); y=18; }
+    fuente('bold',12); doc.text('DEVOLUCIÓN',W/2,y,{align:'center'}); y+=6;
+    if(dev){
+      const yy=y; fila('Estado',' '); sello('DEVUELTO',M+AN*0.36+3,yy+6,true);
+      fila('Fecha de devolución',fL(p.devolucion),true);
+      fila('Estado del material',(p.devEstado||'Bien')+(p.devNota?' — '+p.devNota:''));
+      if(p.recoge) fila('Recogido por (Comisión)',p.recoge);
+      if(p.firmaDev){ y+=6; salto(38); await firma(p.firmaDev,M,y,colW,24); y+=26; doc.setDrawColor(40); doc.line(M,y,M+colW,y);
+        fuente('normal',9.5); doc.text('Firma de quien devuelve el material',M+colW/2,y+5,{align:'center'}); fuente('bold',10); doc.text(String(p.persona||''),M+colW/2,y+10,{align:'center'}); y+=14; }
+    } else {
+      sello('PENDIENTE DE DEVOLVER',M,y+4,false); y+=10;
+      parrafo('Cuando se devuelva el material, la Comisión lo anotará en este mismo documento.',9.5);
+    }
+    // Pie
+    const np=doc.getNumberOfPages();
+    for(let i=1;i<=np;i++){ doc.setPage(i); doc.setDrawColor(210); doc.line(M,286,W-M,286); fuente('normal',8,[110,110,110]);
+      doc.text('Documento generado por la Comisión de Fiestas de Josa · '+(p.numero||'')+' · '+new Date().toLocaleDateString('es-ES')+(np>1?'   ('+i+'/'+np+')':''),W/2,290,{align:'center'}); }
+    const nombre='Prestamo '+(p.numero||'')+' - '+String(p.persona||'').replace(/[\\/:*?"<>|]/g,'')+'.pdf';
+    const blob=doc.output('blob'); const u=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=u; a.download=nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),60000);
+    avisoBreve('✅ PDF guardado: '+nombre);
+  }catch(e){ alert('No se pudo crear el PDF: '+e.message); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=txt; } }
+}
 function imprimirDocPres(){ document.body.classList.add('imprimiendo'); setTimeout(()=>{ window.print(); setTimeout(()=>document.body.classList.remove('imprimiendo'),500); },50); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('docPres').classList.contains('show')) cerrarDocPres(); });
 
