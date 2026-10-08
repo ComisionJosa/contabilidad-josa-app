@@ -127,6 +127,8 @@
   .st-tbl td.cero{color:var(--muted)}
   .st-tbl td.acc{width:1%;text-align:right}
   .st-tbl td.acc .icon-btn{padding:3px 7px}
+  .st-tbl .sinstock{display:inline-block;background:#5a1f1f;color:#ffb3b3;border:1px solid #8a2e2e;border-radius:20px;padding:0 8px;font-size:11px;font-weight:700;margin-left:6px;vertical-align:1px}
+  .st-tbl tr.sin td.prod{color:#ffb3b3}
   .st-tbl .comprar{display:inline-block;background:#4a2a2a;color:#ff9b9b;border:1px solid #5a2e2e;border-radius:20px;padding:0 8px;font-size:11px;margin-left:6px}
   .ct-tels{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
   .ct-tels a{white-space:nowrap}
@@ -2388,7 +2390,7 @@ function stFiltra(list){
   const q=stockSearch.toLowerCase();
   return list.filter(x=>(!stockFiltroCat||(x.categoria||'Otros')===stockFiltroCat) && (!q||[x.nombre,x.nota,x.ref,x.categoria].join(' ').toLowerCase().includes(q)));
 }
-function stProdCell(x,bajo){ return `<td class="prod">${x.ref?`<span class="ref">${esc(x.ref)}</span>`:''}${esc(x.nombre)}${bajo?'<span class="comprar">🛒 comprar</span>':''}${x.nota?`<span class="nota">📝 ${esc(x.nota)}</span>`:''}</td>`; }
+function stProdCell(x,bajo,sin){ return `<td class="prod">${x.ref?`<span class="ref">${esc(x.ref)}</span>`:''}${esc(x.nombre)}${sin?'<span class="sinstock">⛔ Sin stock</span>':(bajo?'<span class="comprar">🛒 comprar</span>':'')}${x.nota?`<span class="nota">📝 ${esc(x.nota)}</span>`:''}</td>`; }
 function renderStock(){
   let html=`<div class="section-title"><h2>📦 Stock / Inventario</h2><span style="display:flex;gap:8px"><button onclick="openStockCats()">🏷️ Categorías</button>${stockVista==='actual'?'<button class="primary" onclick="openStockItem()">+ Nuevo artículo</button>':''}${stockVista==='movs'?'<button class="primary" onclick="openStMov()">+ Apuntar gasto o reposición</button>':''}</span></div>
   <div class="st-tabs"><button class="${stockVista==='actual'?'on':''}" onclick="stockVista='actual';renderStock()">📦 Stock actual</button><button class="${stockVista==='movs'?'on':''}" onclick="stockVista='movs';renderStock()">📝 Gastos y reposiciones</button><button class="${stockVista==='hist'?'on':''}" onclick="stockVista='hist';renderStock()">📊 Histórico por fiestas y años</button></div>`;
@@ -2431,7 +2433,7 @@ function stockActualHtml(){
     items.forEach(x=>{
       const cant=stStock(x), pr=stPrecio(x), val=cant*(pr||0);
       totV+=val;
-      rows+=`<tr>${stProdCell(x, Number(x.minimo)>0 && cant<=Number(x.minimo))}
+      rows+=`<tr class="${cant<=0?'sin':''}">${stProdCell(x, Number(x.minimo)>0 && cant<=Number(x.minimo), cant<=0)}
         <td class="n${pr==null?' cero':''}">${pr==null?'—':money(pr)}</td>
         <td class="n stock${cant?'':' cero'}"${cant<0?' style="color:var(--red)"':''}>${stNum(cant)}${x.unidad?` <span class="muted" style="font-weight:400">${esc(x.unidad)}</span>`:''}</td>
         <td class="n${val?'':' cero'}">${money(val)}</td>
@@ -2513,13 +2515,14 @@ function stockHistHtml(){
     <tbody>${rows}</tbody><tfoot><tr class="tot"><td>Total en €</td>${tot.map((v,i)=>`<td class="n ${cols[i].cls.replace(/quedo/,'')}">${money(v)}</td>`).join('')}</tr></tfoot></table></div>
     <p class="muted" style="font-size:12px;margin-top:8px">Al empezar + entradas − gastado = lo que queda. En comisiones importadas del Excel, «entradas» junta existencias y compras (sin detalle). Lo que quedó al acabar una comisión es con lo que empieza la siguiente.</p>`;
 }
+let stCatPrevia='';
 function poblarStCat(sel){
   const el=document.getElementById('stCat'); if(!el)return;
   const cats=stockCatsAll();
-  if(!cats.length){ el.innerHTML='<option value="">— No hay categorías. Créalas en 🏷️ Categorías —</option>'; el.value=''; el.disabled=true; return; }
   el.disabled=false;
-  el.innerHTML=cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  el.value=(sel&&cats.includes(sel))?sel:cats[0];
+  el.innerHTML=(cats.length?'':'<option value="">— Elige o crea una categoría —</option>')+cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')+'<option value="__new__">➕ Nueva categoría…</option>';
+  el.value=(sel&&cats.includes(sel))?sel:(cats[0]||'');
+  stCatPrevia=el.value;
 }
 function countStockCatUse(cat){ let n=0; db.comisiones.forEach(c=>(c.stock||[]).forEach(x=>{ if((x.categoria||'Otros')===cat) n++; })); return n; }
 function openStockCats(){ const i=document.getElementById('scNueva'); if(i)i.value=''; paintStockCats(); showModal('stockCatsModal'); }
@@ -2548,9 +2551,9 @@ function delStockCat(cat){
 }
 function stockCatChange(){
   const el=document.getElementById('stCat');
-  if(el.value!=='__new__') return;
+  if(el.value!=='__new__'){ stCatPrevia=el.value; return; }
   const nom=(prompt('Nombre de la nueva categoría de stock:')||'').trim();
-  if(!nom){ poblarStCat('Bebida'); return; }
+  if(!nom){ poblarStCat(stCatPrevia); return; }
   if(!db.stockCats.some(k=>normName(k)===normName(nom))) db.stockCats.push(nom);
   save(); poblarStCat(nom);
 }
@@ -2583,14 +2586,30 @@ function delStockItem(id){
 /* ---- Apuntar gasto / reposición ---- */
 let smTipo='salida', smItemId=null;
 function hoyISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+/* Desde el apunte: crear un artículo nuevo y volver al apunte con él elegido */
+let stMovVolver=null;
+function nuevoArticuloDesdeApunte(){
+  stMovVolver={tipo:smTipo, fiesta:document.getElementById('smFiesta').value, cant:document.getElementById('smCant').value, fecha:document.getElementById('smFecha').value, nota:document.getElementById('smNota').value};
+  closeModal('stMovModal');
+  openStockItem();
+  document.getElementById('stockModalTitle').textContent='Nuevo artículo (para el apunte)';
+}
+function volverAlApunte(nuevoId){
+  const v=stMovVolver; stMovVolver=null; if(!v) return;
+  openStMov(nuevoId||null, v.tipo);
+  if(v.fiesta!=null) document.getElementById('smFiesta').value=v.fiesta;
+  if(v.cant) document.getElementById('smCant').value=v.cant;
+  if(v.fecha) document.getElementById('smFecha').value=v.fecha;
+  if(v.nota) document.getElementById('smNota').value=v.nota;
+  smPintar();
+}
 function openStMov(itemId,tipo){
   if(esCerrada()){ alert('🔒 Comisión cerrada: no se pueden apuntar movimientos.'); return; }
   const list=[...stockList()].sort(stOrdenar);
-  if(!list.length){ alert('Primero da de alta algún artículo en 📦 Stock actual.'); return; }
   smItemId=itemId||null; smTipo=tipo||'salida';
   const sel=document.getElementById('smArticulo');
   const cats=stCatsOrden([...new Set(list.map(x=>x.categoria||'Otros'))]);
-  sel.innerHTML=(itemId?'':'<option value="">— Elige el artículo —</option>')+cats.map(cat=>`<optgroup label="${esc(cat)}">${list.filter(x=>(x.categoria||'Otros')===cat).map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('')}</optgroup>`).join('');
+  sel.innerHTML=(itemId?'':'<option value="">— Elige el artículo —</option><option value="__nuevo__">➕ Nuevo artículo…</option>')+cats.map(cat=>`<optgroup label="${esc(cat)}">${list.filter(x=>(x.categoria||'Otros')===cat).map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('')}</optgroup>`).join('');
   sel.value=itemId||''; sel.disabled=!!itemId;
   const fiestas=stFiestas();
   const fs=document.getElementById('smFiesta');
@@ -2613,7 +2632,8 @@ function smPintar(){
 }
 document.getElementById('smTipoSal').onclick=()=>{ smTipo='salida'; smPintar(); };
 document.getElementById('smTipoEnt').onclick=()=>{ smTipo='entrada'; smPintar(); };
-document.getElementById('smArticulo').onchange=smPintar;
+document.getElementById('stCat').onchange=stockCatChange;
+document.getElementById('smArticulo').onchange=()=>{ if(document.getElementById('smArticulo').value==='__nuevo__') nuevoArticuloDesdeApunte(); else smPintar(); };
 document.getElementById('smCant').oninput=smPintar;
 document.getElementById('smCant').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('smGuardar').click(); }});
 document.getElementById('smGuardar').onclick=()=>{
@@ -2824,7 +2844,7 @@ function fmtFecha(f){if(!f)return '—';const[y,m,d]=f.split('-');return `${d}/$
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function slug(s){return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
 function showModal(id){document.getElementById(id).classList.add('show');}
-function closeModal(id){document.getElementById(id).classList.remove('show');if(id==='catModal')catReturnToMov=false;}
+function closeModal(id){document.getElementById(id).classList.remove('show');if(id==='catModal')catReturnToMov=false;if(id==='stockModal'&&stMovVolver)setTimeout(()=>volverAlApunte(null),0);}
 /* Los diálogos solo se cierran con su botón Cerrar/Cancelar, no al hacer clic fuera. */
 
 /* ============ EVENTOS + ARRANQUE ============ */
@@ -2923,9 +2943,12 @@ document.getElementById('stGuardar').onclick=()=>{
     unidad:document.getElementById('stUnidad').value.trim(),
     minimo: minRaw===''?'':Math.max(0,r2(Number(minRaw)||0)),
     nota:document.getElementById('stNota').value.trim()};
+  let nuevoId=null;
   if(stockEditId){ const x=stockList().find(v=>v.id===stockEditId); Object.assign(x, data); if(!Array.isArray(x.movs)) x.movs=[]; delete x.consumo; stSync(x); }
-  else { const x=Object.assign({id:uid(), movs:[]}, data); stSync(x); stockList().push(x); }
+  else { const x=Object.assign({id:uid(), movs:[]}, data); stSync(x); stockList().push(x); nuevoId=x.id; }
+  const volver=stMovVolver; stMovVolver=null;
   save(); closeModal('stockModal'); renderStock();
+  if(volver){ stMovVolver=volver; volverAlApunte(nuevoId); }
 };
 
 /* ---- Evitar dos pestañas/ventanas a la vez (no pisar datos) ---- */
