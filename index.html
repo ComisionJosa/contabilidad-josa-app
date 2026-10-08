@@ -281,10 +281,23 @@
   .hoja .pie{margin-top:26px;font-size:11.5px;color:#666;text-align:center;border-top:1px solid #ddd;padding-top:8px}
   @media(max-width:720px){ .hoja{padding:24px 18px;font-size:13.5px} .hoja .firmas{grid-template-columns:1fr} .pres-lista{grid-template-columns:1fr} }
   @media print{
+    @page{size:A4;margin:12mm}
+    html:has(body.imprimiendo),body.imprimiendo{background:#fff !important;height:auto !important;min-height:0 !important;overflow:visible !important}
     body.imprimiendo > *:not(#docPres){display:none !important}
-    body.imprimiendo #docPres{position:static;background:#fff;padding:0;display:block !important}
-    body.imprimiendo #docPres .barra{display:none}
-    body.imprimiendo .hoja{box-shadow:none;max-width:none;padding:10mm 12mm;border-radius:0}
+    body.imprimiendo #docPres{position:static !important;inset:auto !important;height:auto !important;overflow:visible !important;background:#fff !important;padding:0 !important;display:block !important}
+    body.imprimiendo #docPres .barra{display:none !important}
+    body.imprimiendo .hoja{box-shadow:none;max-width:none;margin:0;padding:0;border-radius:0;font-size:12.5px;line-height:1.4}
+    body.imprimiendo .hoja .cab{padding-bottom:8px;margin-bottom:10px}
+    body.imprimiendo .hoja h1{margin:4px 0 10px;font-size:16px}
+    body.imprimiendo .hoja table{margin:4px 0 8px;font-size:12.5px}
+    body.imprimiendo .hoja td,body.imprimiendo .hoja th{padding:4px 8px !important}
+    body.imprimiendo .hoja p{margin:6px 0}
+    body.imprimiendo .hoja .firmas{margin-top:10px;gap:20px}
+    body.imprimiendo .hoja .firma .img{height:75px}
+    body.imprimiendo .hoja .firma img{max-height:72px}
+    body.imprimiendo .hoja .pie{margin-top:12px}
+    body.imprimiendo .hoja .bloque{break-inside:avoid;page-break-inside:avoid}
+    body.imprimiendo .hoja .firmas{break-inside:avoid;page-break-inside:avoid}
   }
   .stat.clic{cursor:pointer;transition:border-color .15s,transform .15s}
   .stat.clic:hover{border-color:var(--acc);transform:translateY(-1px)}
@@ -2105,7 +2118,7 @@ function verDocPrestamo(id){
       <div class="firma"><div class="img">${p.firma?`<img src="${p.firma}" alt="Firma">`:''}</div>Firma de quien recibe el material<br><b>${esc(p.persona||'')}</b></div>
       <div class="firma"><div class="img"><span class="sello ${dev?'':'p'}">COMISIÓN DE FIESTAS · JOSA</span></div>Por la Comisión de Fiestas<br><b>${esc(p.entrega||'')}</b></div>
     </div>
-    <h1 style="margin-top:30px;font-size:16px">Devolución</h1>
+    <div class="bloque"><h1 style="margin-top:30px;font-size:16px">Devolución</h1>
     ${dev?`<table>
       <tr><th>Estado</th><td><span class="sello" style="transform:none;padding:2px 10px">DEVUELTO</span></td></tr>
       <tr><th>Fecha de devolución</th><td><b>${fLarga(p.devolucion)}</b></td></tr>
@@ -2113,7 +2126,7 @@ function verDocPrestamo(id){
       ${p.recoge?`<tr><th>Recogido por (Comisión)</th><td>${esc(p.recoge)}</td></tr>`:''}
     </table>
     ${p.firmaDev?`<div class="firmas"><div class="firma"><div class="img"><img src="${p.firmaDev}" alt="Firma devolución"></div>Firma de quien devuelve el material<br><b>${esc(p.persona||'')}</b></div><div></div></div>`:''}`
-    :`<p><span class="sello p" style="transform:none">PENDIENTE DE DEVOLVER</span></p><p style="color:#666;font-size:13px">Cuando se devuelva el material, la Comisión lo anotará en este mismo documento.</p>`}
+    :`<p><span class="sello p" style="transform:none">PENDIENTE DE DEVOLVER</span></p><p style="color:#666;font-size:13px">Cuando se devuelva el material, la Comisión lo anotará en este mismo documento.</p>`}</div>
     <div class="pie">Documento generado por la Comisión de Fiestas de Josa · ${esc(p.numero||'')} · ${new Date().toLocaleDateString('es-ES')}</div>
   </div>`;
   document.getElementById('docPres').classList.add('show');
