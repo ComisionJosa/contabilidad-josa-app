@@ -545,10 +545,7 @@
     <div><label>Fecha de devolución</label><input type="date" id="dvFecha"></div>
     <div><label>¿Cómo vuelve?</label><select id="dvEstado"><option value="Bien">👍 Bien, todo correcto</option><option value="Con desperfectos">⚠️ Con desperfectos</option><option value="Incompleto">❗ Falta algo</option></select></div>
   </div>
-  <div class="field two">
-    <div><label>Lo recoge (de la comisión)</label><input type="text" id="dvRecoge" placeholder="Nombre" list="psEntregas"></div>
-    <div style="flex:2"><label>Nota (opcional)</label><input type="text" id="dvNota" placeholder="Ej: la tapa vuelve abollada"></div>
-  </div>
+  <div class="field"><label>Nota (opcional)</label><input type="text" id="dvNota" placeholder="Ej: la tapa vuelve abollada"></div>
   <div class="field"><label>✍️ Firma de quien lo devuelve (opcional)</label>
     <div class="firma-box" id="dvFirmaBox"><div class="linea"></div><div class="ph">Firme aquí (opcional)</div><canvas></canvas></div>
     <div style="display:flex;justify-content:flex-end;margin-top:6px"><button type="button" class="ghost" onclick="firmaDv.limpiar()">↺ Borrar firma</button></div>
@@ -2065,7 +2062,6 @@ function openDevolucion(id){
   document.getElementById('devResumen').innerHTML=`${esc(presObjetos(p).join(' · '))} — prestado a <b>${esc(p.persona||'')}</b> el ${fmtFecha(p.fecha)}`;
   document.getElementById('dvFecha').value=hoyYMD();
   document.getElementById('dvEstado').value='Bien';
-  document.getElementById('dvRecoge').value='';
   document.getElementById('dvNota').value='';
   showModal('devModal');
   if(!firmaDv) firmaDv=crearFirma('dvFirmaBox');
@@ -2716,7 +2712,7 @@ document.getElementById('psGuardar').onclick=()=>{
 document.getElementById('dvGuardar').onclick=()=>{
   const p=prestamos().find(x=>x.id===presDevId); if(!p) return;
   const firma=firmaDv&&!firmaDv.vacia()?firmaDv.png():'';
-  Object.assign(p,{estado:'devuelto', devolucion:document.getElementById('dvFecha').value||hoyYMD(), devEstado:document.getElementById('dvEstado').value, devNota:document.getElementById('dvNota').value.trim(), recoge:document.getElementById('dvRecoge').value.trim(), firmaDev:firma||p.firmaDev||'', mod:new Date().toISOString()});
+  Object.assign(p,{estado:'devuelto', devolucion:document.getElementById('dvFecha').value||hoyYMD(), devEstado:document.getElementById('dvEstado').value, devNota:document.getElementById('dvNota').value.trim(), firmaDev:firma||p.firmaDev||'', mod:new Date().toISOString()});
   save(); closeModal('devModal'); renderPrestamos();
 };
 
