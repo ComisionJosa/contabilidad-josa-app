@@ -1100,7 +1100,7 @@ function renderResumen(){
       <div class="row"><span class="lbl">Gastos</span><span class="money neg">${money(ft.gas)}</span></div>
       <div class="row"><span class="lbl">Resultado</span><span class="money ${ft.res>=0?'pos':'neg'}"><b>${money(ft.res)}</b></span></div>
       ${ft.pendiente>0?`<div class="row"><span class="lbl">⏳ Pendiente</span><span class="money neg">${money(ft.pendiente)}</span></div>`:''}
-      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button class="icon-btn ghost" onclick="verFiesta('${f.id}')">Ver →</button><button class="icon-btn ghost" onclick="openCierre('${c.id}','${f.id}')">📄 Resumen</button></div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button class="icon-btn ghost" onclick="verFiesta('${f.id}')">Ver →</button><button class="icon-btn ghost" onclick="openCierre('${c.id}','${f.id}')">📄 Resumen</button>${(n=>n?`<button class="icon-btn ghost" onclick="exportarFacturas('${c.id}','${f.id}')" title="Descargar una carpeta (ZIP) con todos los documentos de esta fiesta">📎 Facturas (${n})</button>`:'')(movsDe(c.id).filter(m=>m.fiestaId===f.id).reduce((t,m)=>t+adjuntosDe(m).length,0))}</div>
     </div>`;
   });
   html+=`</div>`;
@@ -1577,6 +1577,61 @@ function delComi(id){const c=db.comisiones.find(x=>x.id===id);if(!c)return;const
   papeleraPush('comision', c.nombre, {comision:c, movimientos:movs});
   if(db.activaId===id)db.activaId=db.comisiones[0]?db.comisiones[0].id:null;save();render();}
 function limpiarFiltros(){const fi=state.filtro.fiesta;state.filtro={fiesta:fi,tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:''};renderMovs();}
+/* ---- Exportar facturas de una fiesta: ZIP con una carpeta y todos los documentos + listado ---- */
+let jsZipCargando=null;
+function cargarJSZip(){
+  if(window.JSZip) return Promise.resolve();
+  if(jsZipCargando) return jsZipCargando;
+  jsZipCargando=new Promise((ok,ko)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    sc.onload=()=>ok(); sc.onerror=()=>{ jsZipCargando=null; ko(new Error('sin conexión')); }; document.head.appendChild(sc); });
+  return jsZipCargando;
+}
+function nombreSeguro(t){ return String(t||'').replace(/[\\/:*?"<>|\r\n\t]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90); }
+async function bytesDeAdjunto(src){
+  if(typeof src!=='string' || !src) throw new Error('vacío');
+  if(src.indexOf('data:')===0){ const mm=/^data:([^;,]*)(?:;[^,]*)?;base64,([\s\S]*)$/.exec(src); const bin=atob(mm[2]); const u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i); return {u8, mime:mm[1]}; }
+  const url = (ghMode && esRutaRecibo(src)) ? await adjBlobUrl(src) : src;
+  const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status);
+  return {u8:new Uint8Array(await r.arrayBuffer()), mime:r.headers.get('content-type')||''};
+}
+function extDeAdjunto(a,mime){
+  const m=/\.([a-z0-9]{1,8})$/i.exec(String(a.nombre||''))||/\.([a-z0-9]{1,8})$/i.exec(String(a.src||'').split('?')[0]);
+  if(m && !/^data:/.test(a.src||'')) return m[1].toLowerCase();
+  if(m) return m[1].toLowerCase();
+  return ({'image/jpeg':'jpg','image/png':'png','application/pdf':'pdf'})[(mime||'').split(';')[0]] || (a.kind==='img'?'jpg':'bin');
+}
+async function exportarFacturas(cid,fid){
+  const c=db.comisiones.find(x=>x.id===cid); const f=c&&(c.fiestas||[]).find(x=>x.id===fid); if(!f) return;
+  const movs=movsDe(cid).filter(m=>m.fiestaId===fid && adjuntosDe(m).length).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  const total=movs.reduce((t,m)=>t+adjuntosDe(m).length,0);
+  if(!total){ alert('Esta fiesta no tiene documentos adjuntos.'); return; }
+  avisoBreve('⏳ Preparando '+total+' documento'+(total===1?'':'s')+'…');
+  try{ await cargarJSZip(); }catch(e){ alert('Para crear la carpeta hace falta conexión a internet (solo la primera vez que se usa).'); return; }
+  const carpetaNombre=nombreSeguro(f.nombre)+(f.tipo==='otro'&&c?(' '+c.nombre.replace(/^Comisión\s*/,'')):'');
+  const zip=new JSZip(); const dir=zip.folder(carpetaNombre);
+  const usados={}; const filas=[['Fecha','Tipo','Categoría','Concepto','Proveedor','Importe (€)','Estado del pago','Archivo']];
+  let ok=0, fallos=[];
+  for(const m of movs){
+    const adjs=adjuntosDe(m);
+    for(let i=0;i<adjs.length;i++){
+      const a=adjs[i];
+      try{
+        const {u8,mime}=await bytesDeAdjunto(a.src);
+        const base=nombreSeguro((m.fecha||'sin fecha')+' - '+(m.concepto||'(sin concepto)')+' - '+money(m.importe))+(adjs.length>1?' ('+(i+1)+')':'');
+        let nom=base+'.'+extDeAdjunto(a,mime); let k=2; while(usados[nom]){ nom=base+' ['+(k++)+'].'+extDeAdjunto(a,mime); } usados[nom]=1;
+        dir.file(nom,u8);
+        filas.push([fmtFecha(m.fecha),m.tipo==='ingreso'?'Ingreso':'Gasto',m.categoria||'',m.concepto||'',m.proveedor||'',String(Number(m.importe)||0).replace('.',','),m.tipo==='gasto'?({pagado:'Pagado',parcial:'A medias',pendiente:'Sin pagar'}[m.estadoPago||'pagado']):'',nom]);
+        ok++;
+      }catch(e){ fallos.push((m.concepto||'')+' ('+e.message+')'); }
+    }
+  }
+  const csv='\uFEFF'+filas.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  dir.file('Listado.csv',csv);
+  const blob=await zip.generateAsync({type:'blob'});
+  const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=carpetaNombre+' - Facturas.zip'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),60000);
+  if(fallos.length) alert('Se han guardado '+ok+' documentos, pero '+fallos.length+' no se pudieron descargar:\n- '+fallos.join('\n- '));
+  else avisoBreve('✅ Carpeta «'+carpetaNombre+'» descargada con '+ok+' documento'+(ok===1?'':'s'));
+}
 function verFiesta(fid){state.tab='movs';state.filtro={fiesta:fid,tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:''};render();}
 /* ---- ADJUNTOS (fotos y documentos) ---- */
 let movRecibos=[];   // [{src, kind:'img'|'doc'}]
