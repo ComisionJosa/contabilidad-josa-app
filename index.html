@@ -1609,7 +1609,7 @@ async function exportarFacturas(cid,fid){
   try{ await cargarJSZip(); }catch(e){ alert('Para crear la carpeta hace falta conexión a internet (solo la primera vez que se usa).'); return; }
   const carpetaNombre=nombreSeguro(f.nombre)+(f.tipo==='otro'&&c?(' '+c.nombre.replace(/^Comisión\s*/,'')):'');
   const zip=new JSZip(); const dir=zip.folder(carpetaNombre);
-  const usados={}; const filas=[['Fecha','Tipo','Categoría','Concepto','Proveedor','Importe (€)','Estado del pago','Archivo']];
+  const usados={};
   let ok=0, fallos=[];
   for(const m of movs){
     const adjs=adjuntosDe(m);
@@ -1620,13 +1620,10 @@ async function exportarFacturas(cid,fid){
         const base=nombreSeguro((m.fecha||'sin fecha')+' - '+(m.concepto||'(sin concepto)')+' - '+money(m.importe))+(adjs.length>1?' ('+(i+1)+')':'');
         let nom=base+'.'+extDeAdjunto(a,mime); let k=2; while(usados[nom]){ nom=base+' ['+(k++)+'].'+extDeAdjunto(a,mime); } usados[nom]=1;
         dir.file(nom,u8);
-        filas.push([fmtFecha(m.fecha),m.tipo==='ingreso'?'Ingreso':'Gasto',m.categoria||'',m.concepto||'',m.proveedor||'',String(Number(m.importe)||0).replace('.',','),m.tipo==='gasto'?({pagado:'Pagado',parcial:'A medias',pendiente:'Sin pagar'}[m.estadoPago||'pagado']):'',nom]);
         ok++;
       }catch(e){ fallos.push((m.concepto||'')+' ('+e.message+')'); }
     }
   }
-  const csv='\uFEFF'+filas.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
-  dir.file('Listado.csv',csv);
   const blob=await zip.generateAsync({type:'blob'});
   const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=carpetaNombre+' - Facturas.zip'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),60000);
   if(fallos.length) alert('Se han guardado '+ok+' documentos, pero '+fallos.length+' no se pudieron descargar:\n- '+fallos.join('\n- '));
