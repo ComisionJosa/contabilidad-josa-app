@@ -277,6 +277,7 @@
   body.solo-lectura #movilCard{display:none !important}
   body.solo-lectura .adj-no{display:none !important}
   body.solo-lectura #btnAjustes{display:none !important}
+  body.solo-lectura [onclick*="openTarea"], body.solo-lectura [onclick*="delTarea"]{display:none !important}
   body.sin-conectar header button, body.sin-conectar header .comi-pick{display:none !important}
   body.solo-lectura header [onclick*="guia.html"]{display:none !important}
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
@@ -286,6 +287,20 @@
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  /* ---- Tareas ---- */
+  .tar-grupo{display:flex;align-items:center;gap:10px;margin:18px 0 8px;font-weight:800;font-size:13.5px;letter-spacing:.4px;text-transform:uppercase}
+  .tar-grupo .n{font-weight:600;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
+  .tar-grupo.atras{color:#ff9b9b} .tar-grupo.semana{color:#ffc76b} .tar-grupo.mes{color:#bcd3ec} .tar-grupo.luego{color:var(--muted)} .tar-grupo.hechas{color:var(--green)}
+  .tarea{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px}
+  .tarea.atras{box-shadow:inset 4px 0 0 #e05252;border-color:#5a2e2e} .tarea.semana{box-shadow:inset 4px 0 0 var(--acc)}
+  .tarea.hecha{opacity:.6} .tarea.hecha .tt{text-decoration:line-through}
+  .tarea .chk{width:26px;height:26px;border-radius:8px;border:2px solid #5d7189;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;padding:0;margin-top:1px}
+  .tarea.hecha .chk{background:var(--green);border-color:var(--green);color:#062012}
+  .tarea .tt{font-weight:700;font-size:15px}
+  .tarea .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .tarea .cuando{font-size:12.5px;font-weight:700;white-space:nowrap;text-align:right}
+  .tarea .nota{font-size:13px;color:#cfd9e4;margin-top:4px;white-space:pre-wrap}
+  .tab-aviso{display:inline-block;background:#e05252;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:0 6px;margin-left:5px;line-height:17px;min-width:17px;text-align:center}
   /* ---- Préstamos ---- */
   .pr-estado{display:inline-block;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
   .pr-estado.prestado{background:#3a2a0e;color:#ffc76b;border:1px solid #6b4a14}
@@ -422,6 +437,7 @@
   <button data-tab="panel">📈 Panel</button>
   <button data-tab="stock">📦 Stock</button>
   <button data-tab="notas">📝 Anotaciones</button>
+  <button data-tab="tareas">✅ Tareas</button>
   <button data-tab="premios">🏆 Concursos</button>
   <button data-tab="prestamos">🤝 Préstamos</button>
   <button data-tab="contactos">📇 Contactos</button>
@@ -586,6 +602,20 @@
   <div class="modal-actions"><button class="ghost" onclick="closeModal('stMovModal')">Cancelar</button><button class="primary" id="smGuardar">Apuntar</button></div>
 </div></div>
 
+<!-- MODAL TAREA -->
+<div class="modal-bg" id="tareaModal"><div class="modal" style="max-width:600px">
+  <h3 id="tareaTitulo">Nueva tarea</h3>
+  <div class="field"><label>¿Qué hay que hacer?</label><input type="text" id="taTitulo" placeholder="Ej: Contratar las jotas para San Roque"></div>
+  <div class="field two">
+    <div><label>Fecha límite</label><input type="date" id="taFecha"></div>
+    <div><label>Fiesta</label><select id="taFiesta"></select></div>
+  </div>
+  <div class="field"><label>Responsable (opcional)</label><input type="text" id="taResp" placeholder="Quién se encarga" list="taResps"><datalist id="taResps"></datalist></div>
+  <div class="field"><label>Nota (opcional)</label><textarea id="taNota" rows="3" placeholder="Teléfono, cantidades, detalles…"></textarea></div>
+  <label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="taRepite"> 🔁 Se repite cada año (pasa a la comisión siguiente con la fecha del año nuevo)</label>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('tareaModal')">Cancelar</button><button class="primary" id="taGuardar">Guardar</button></div>
+</div></div>
+
 <!-- MODAL PRÉSTAMO -->
 <div class="modal-bg" id="presModal"><div class="modal" style="max-width:680px">
   <h3 id="presTitulo">Nuevo préstamo</h3>
@@ -746,6 +776,7 @@ function normaliza(d){
   d.notas = Array.isArray(d.notas)?d.notas:[];
   d.premios = Array.isArray(d.premios)?d.premios:[];
   d.prestamos = Array.isArray(d.prestamos)?d.prestamos:[];
+  d.tareas = Array.isArray(d.tareas)?d.tareas:[];
   d.stockCats = Array.isArray(d.stockCats)?d.stockCats:[];
   // stock ahora es POR COMISIÓN
   d.comisiones.forEach(c=>{ if(!Array.isArray(c.stock)) c.stock=[]; });
@@ -1156,11 +1187,12 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && state.tab==='aju
 function render(){
   renderComiSelect();paintSync();
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.tab));
+  { const bt=document.querySelector('#nav button[data-tab="tareas"]'); if(bt){ const a=avisosTareas(); bt.innerHTML='✅ Tareas'+(a.urgentes?`<span class="tab-aviso">${a.urgentes}</span>`:''); } }
   const ga=document.getElementById('btnAjustes'); if(ga) ga.classList.toggle('on',state.tab==='ajustes');
   document.getElementById('nav').style.display=state.tab==='ajustes'?'none':'';
   medirBarras();
   if(!activa()){content.innerHTML='<div class="empty">No hay comisiones. Créala en la pestaña Comisiones.</div>';return;}
-  ({resumen:renderResumen,movs:renderMovs,panel:renderPanel,contactos:renderContactos,notas:renderNotas,premios:renderPremios,prestamos:renderPrestamos,stock:renderStock,comisiones:renderComisiones,ajustes:renderAjustes}[state.tab])();
+  ({resumen:renderResumen,movs:renderMovs,panel:renderPanel,contactos:renderContactos,notas:renderNotas,premios:renderPremios,prestamos:renderPrestamos,tareas:renderTareas,stock:renderStock,comisiones:renderComisiones,ajustes:renderAjustes}[state.tab])();
   if(state.tab==='ajustes') content.insertAdjacentHTML('afterbegin',`<div class="section-title" style="border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px"><h2>⚙️ Copias y datos</h2><button class="primary" onclick="cerrarAjustes()" title="Volver al programa (Esc)">✕ Cerrar</button></div>`);
 }
 function renderComiSelect(){
@@ -1170,6 +1202,7 @@ function renderComiSelect(){
 function renderResumen(){
   const c=activa();const t=totalesComision(c);const locked=c.cerrada;
   let html='';
+  { const a=avisosTareas(); if(a.urgentes) html+=`<div class="banner ${a.atrasadas?'warn':''}" style="cursor:pointer" onclick="goTab('tareas')">⏰ ${a.atrasadas?`<b>${a.atrasadas} tarea${a.atrasadas===1?'':'s'} atrasada${a.atrasadas===1?'':'s'}</b>`:''}${a.atrasadas&&a.semana?' y ':''}${a.semana?`<b>${a.semana} para esta semana</b>`:''}: ${esc(a.lista.slice(0,3).map(x=>x.titulo).join(' · '))}${a.lista.length>3?'…':''} <span style="margin-left:auto;font-weight:700">Ver tareas →</span></div>`; }
   if(locked)html+=`<div class="banner warn">🔒 Comisión cerrada (solo lectura). No se pueden añadir ni modificar movimientos. Puedes reabrirla en la pestaña Comisiones.</div>`;
   html+=`<div class="grid cols-4" style="margin-bottom:18px">
     <div class="card stat"><span class="k">Saldo inicial</span><span class="v money">${money(c.saldoInicial)}</span></div>
@@ -1735,7 +1768,7 @@ document.getElementById('cGuardar').onclick=()=>{
   const saldo=parseFloat(document.getElementById('cSaldo').value)||0;
   if(state.editComiId){const c=db.comisiones.find(x=>x.id===state.editComiId);c.nombre=nombre;c.saldoInicial=saldo;
     if(c.anioInicio!==anio){c.anioInicio=anio;c.fiestas.forEach(f=>{if(f.tipo==='otro')return;const y=(f.tipo==='halloween'||f.tipo==='santalucia')?anio:anio+1;f.anio=y;f.nombre=f.nombre.replace(/\d{4}$/,y);if(!/\d{4}$/.test(f.nombre))f.nombre+=' '+y;});}
-  }else{const c=buildComision(nombre,anio,saldo,stockHeredado(anio));db.comisiones.push(c);db.activaId=c.id;}
+  }else{const c=buildComision(nombre,anio,saldo,stockHeredado(anio));db.comisiones.push(c);db.activaId=c.id;heredarTareas(c);}
   if(save()){closeModal('comiModal');render();}
 };
 function setActiva(id){db.activaId=id;save();render();}
@@ -1952,8 +1985,8 @@ function delMov(id){
   save(); render();
 }
 /* ============ PAPELERA (unificada: movimientos, contactos, categorías, comisiones) ============ */
-const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝'};
-const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo'};
+const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝',tarea:'✅'};
+const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo',tarea:'Tarea'};
 function papeleraPush(tipo,titulo,payload){ db.papelera.push({id:uid(),tipo,titulo:titulo||'',deletedAt:new Date().toISOString(),payload}); }
 function fmtFechaHora(iso){ if(!iso)return ''; const s=String(iso); const d=s.slice(0,10).split('-'); return (d.length===3?`${d[2]}/${d[1]}/${d[0]}`:s.slice(0,10))+' '+s.slice(11,16); }
 function openPapelera(){ paintPapelera(); showModal('papeleraModal'); }
@@ -1979,6 +2012,7 @@ function restaurarItem(pid){
   else if(it.tipo==='nota'){ db.notas.push(it.payload); }
   else if(it.tipo==='premio'){ db.premios.push(it.payload); }
   else if(it.tipo==='prestamo'){ db.prestamos.push(it.payload); }
+  else if(it.tipo==='tarea'){ db.tareas.push(it.payload); }
   else if(it.tipo==='categoria'){ const nm=it.payload.nombre; if(catNames().some(c=>normName(c)===normName(nm))){ alert('Ya existe una categoría "'+nm+'". No se restaura para no duplicar.'); return; } db.categorias.push(it.payload); }
   else if(it.tipo==='comision'){ const p=it.payload; if(db.comisiones.some(c=>c.id===p.comision.id)){ alert('Esa comisión ya existe.'); return; } db.comisiones.push(p.comision); (p.movimientos||[]).forEach(m=>db.movimientos.push(m)); }
   else if(it.tipo==='adjunto'){ const p=it.payload||{}; const m=db.movimientos.find(x=>x.id===p.movId); if(!m){ alert('No se puede restaurar: el movimiento de este documento ya no existe.'); return; } m.recibos=adjuntosDe(m).concat([p.adj]); delete m.recibo; }
@@ -2209,6 +2243,102 @@ function prPlantilla(){
       donde:p.donde||'', inscripcion:p.inscripcion||'', anterior:[p.premio,(prCoste(p)!=null?'('+money(prCoste(p))+(p.costeTxt?', '+p.costeTxt:'')+')':'')].filter(Boolean).join(' '), nota:'', orden:i+1, creado:new Date().toISOString()});
   });
   save(); prComi=act.id; prFiesta=''; renderPremios();
+}
+
+/* ============ TAREAS Y AVISOS (por comisión) ============ */
+let tarEditId=null, tarFiesta='', tarSearch='', tarVerHechas=false;
+function tareasDe(cid){ return (db.tareas||[]).filter(t=>t.comisionId===cid); }
+function diasHasta(f){ if(!f) return null; const h=new Date(hoyYMD()+'T12:00:00'), d=new Date(f+'T12:00:00'); return Math.round((d-h)/86400000); }
+function avisosTareas(){
+  const c=activa(); if(!c) return {urgentes:0,atrasadas:0,semana:0,lista:[]};
+  const pend=tareasDe(c.id).filter(t=>!t.hecha && t.fecha);
+  const atr=pend.filter(t=>diasHasta(t.fecha)<0), sem=pend.filter(t=>{ const d=diasHasta(t.fecha); return d>=0&&d<=7; });
+  const lista=atr.concat(sem).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  return {urgentes:atr.length+sem.length, atrasadas:atr.length, semana:sem.length, lista};
+}
+function cuandoTxt(f){
+  const d=diasHasta(f); if(d===null) return '';
+  if(d<0) return `hace ${-d} día${d===-1?'':'s'}`; if(d===0) return 'hoy'; if(d===1) return 'mañana';
+  if(d<60) return `en ${d} días`; const m=Math.round(d/30); return `en ${m} meses`;
+}
+function renderTareas(){
+  const c=activa(); if(!c){ content.innerHTML='<div class="empty">No hay comisiones.</div>'; return; }
+  const locked=!!c.cerrada, ro=soloLectura||locked;
+  const fiestas=fiestasOrden(c);
+  const fNom=fid=>{ const f=fiestas.find(x=>x.id===fid); return f?(EMO[f.tipo]||'🎪')+' '+f.nombre:'📌 General'; };
+  const q=tarSearch.toLowerCase();
+  const todas=tareasDe(c.id).filter(t=>(!tarFiesta||(tarFiesta==='-'?!t.fiestaId:t.fiestaId===tarFiesta)) && (!q||[t.titulo,t.responsable,t.nota].join(' ').toLowerCase().includes(q)));
+  const pend=todas.filter(t=>!t.hecha), hechas=todas.filter(t=>t.hecha);
+  const ord=(a,b)=>(a.fecha||'9999').localeCompare(b.fecha||'9999')||(a.titulo||'').localeCompare(b.titulo||'','es');
+  const grupos=[
+    ['atras','⚠️ Atrasadas',pend.filter(t=>t.fecha&&diasHasta(t.fecha)<0)],
+    ['semana','🔜 Esta semana',pend.filter(t=>t.fecha&&diasHasta(t.fecha)>=0&&diasHasta(t.fecha)<=7)],
+    ['mes','📅 Próximos 30 días',pend.filter(t=>t.fecha&&diasHasta(t.fecha)>7&&diasHasta(t.fecha)<=30)],
+    ['luego','🗓️ Más adelante',pend.filter(t=>t.fecha&&diasHasta(t.fecha)>30)],
+    ['luego','Sin fecha',pend.filter(t=>!t.fecha)]
+  ];
+  const a=avisosTareas();
+  let html=`<div class="section-title"><h2>✅ Tareas y avisos</h2>${ro?'':'<button class="primary" onclick="openTarea()">+ Nueva tarea</button>'}</div>
+  <p class="muted" style="margin:-6px 0 12px">Lo que hay que hacer y cuándo: contratar, pedir, llamar… Las atrasadas y las de esta semana salen avisadas en la pestaña y en el Resumen. Comisión <b>${esc(c.nombre)}</b>.</p>`;
+  const chips=[{k:'',t:'Todas'}].concat(fiestas.map(f=>({k:f.id,t:(EMO[f.tipo]||'🎪')+' '+f.nombre}))).concat([{k:'-',t:'📌 General'}]);
+  html+=`<div class="toolbar"><input type="text" id="taBuscar" placeholder="Buscar tarea, responsable…" value="${esc(tarSearch)}" style="min-width:220px">
+    <label style="display:flex;gap:6px;align-items:center;cursor:pointer;white-space:nowrap"><input type="checkbox" id="taVerHechas" ${tarVerHechas?'checked':''}> Ver hechas (${hechas.length})</label>
+    <span class="spacer"></span><span class="pill">${pend.length} pendiente${pend.length===1?'':'s'}${a.urgentes?` · <b style="color:#ff9b9b">${a.urgentes} urgente${a.urgentes===1?'':'s'}</b>`:''}</span></div>
+  <div class="nt-chips" style="margin-bottom:4px">${chips.map(ch=>`<button class="${tarFiesta===ch.k?'on':''}" onclick="tarFiesta='${ch.k}';renderTareas()">${esc(ch.t)}</button>`).join('')}</div>`;
+  const fila=t=>{
+    const d=diasHasta(t.fecha), clase=t.hecha?'hecha':(d!==null&&d<0?'atras':(d!==null&&d<=7?'semana':''));
+    return `<div class="tarea ${clase}">
+      <button class="chk" ${ro?'disabled style="cursor:default"':`onclick="marcarTarea('${t.id}')"`} title="${t.hecha?'Marcar como pendiente':'Marcar como hecha'}">${t.hecha?'✓':''}</button>
+      <div><div class="tt">${esc(t.titulo||'(sin título)')}</div>
+        <div class="meta">${esc(fNom(t.fiestaId))}${t.responsable?' · 👤 '+esc(t.responsable):''}${t.repite?' · 🔁 cada año':''}${t.hecha&&t.hechaEl?' · hecha el '+fmtFecha(t.hechaEl.slice(0,10)):''}</div>
+        ${t.nota?`<div class="nota">${esc(t.nota)}</div>`:''}</div>
+      <div><div class="cuando" style="color:${t.hecha?'var(--muted)':(clase==='atras'?'#ff9b9b':(clase==='semana'?'#ffc76b':'#bcd3ec'))}">${t.fecha?fmtFecha(t.fecha):'—'}${t.fecha&&!t.hecha?`<br><span style="font-weight:400">${cuandoTxt(t.fecha)}</span>`:''}</div>
+        ${ro?'':`<div style="display:flex;gap:4px;justify-content:flex-end;margin-top:6px"><button class="icon-btn ghost" onclick="openTarea('${t.id}')" title="Editar">✏️</button><button class="icon-btn danger" onclick="delTarea('${t.id}')" title="Borrar">🗑️</button></div>`}</div>
+    </div>`;
+  };
+  let cuerpo='';
+  grupos.forEach(([cl,tit,l])=>{ if(!l.length) return; cuerpo+=`<div class="tar-grupo ${cl}">${tit}<span class="n">${l.length}</span></div>`+l.sort(ord).map(fila).join(''); });
+  if(tarVerHechas && hechas.length) cuerpo+=`<div class="tar-grupo hechas">✅ Hechas<span class="n">${hechas.length}</span></div>`+hechas.sort(ord).map(fila).join('');
+  if(!cuerpo) cuerpo=`<div class="card empty">${tareasDe(c.id).length?'No hay tareas pendientes con este filtro. 🎉':'Todavía no hay tareas.'}${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openTarea()">+ Nueva tarea</button>'}</div>`;
+  content.innerHTML=html+cuerpo;
+  document.getElementById('taBuscar').oninput=e=>{ tarSearch=e.target.value; renderTareas(); focusEnd('taBuscar'); };
+  document.getElementById('taVerHechas').onchange=e=>{ tarVerHechas=e.target.checked; renderTareas(); };
+}
+function openTarea(id){
+  const c=activa(); if(!c) return; if(c.cerrada){ alert('🔒 Comisión cerrada.'); return; }
+  tarEditId=id||null;
+  const t=id?(db.tareas||[]).find(x=>x.id===id):null;
+  document.getElementById('tareaTitulo').textContent=id?'Editar tarea':'✅ Nueva tarea';
+  document.getElementById('taFiesta').innerHTML='<option value="">📌 General</option>'+fiestasOrden(c).map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('');
+  document.getElementById('taResps').innerHTML=[...new Set((db.tareas||[]).map(x=>x.responsable).filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('');
+  document.getElementById('taTitulo').value=t?t.titulo||'':'';
+  document.getElementById('taFecha').value=t?t.fecha||'':'';
+  document.getElementById('taFiesta').value=t?(t.fiestaId||''):((tarFiesta&&tarFiesta!=='-')?tarFiesta:'');
+  document.getElementById('taResp').value=t?t.responsable||'':'';
+  document.getElementById('taNota').value=t?t.nota||'':'';
+  document.getElementById('taRepite').checked=t?!!t.repite:true;
+  showModal('tareaModal'); setTimeout(()=>document.getElementById('taTitulo').focus(),50);
+}
+function marcarTarea(id){
+  const t=(db.tareas||[]).find(x=>x.id===id); if(!t||soloLectura) return;
+  t.hecha=!t.hecha; t.hechaEl=t.hecha?new Date().toISOString():''; save(); render();
+}
+function delTarea(id){
+  const t=(db.tareas||[]).find(x=>x.id===id); if(!t) return;
+  if(!confirm(`¿Enviar a la papelera la tarea «${t.titulo}»?`)) return;
+  db.tareas=db.tareas.filter(x=>x.id!==id); papeleraPush('tarea',t.titulo||'(tarea)',t); save(); render();
+}
+/* Al crear una comisión nueva: copiar las tareas «cada año» de la anterior, con la fecha un año más tarde y sin hacer */
+function heredarTareas(nueva){
+  const prev=db.comisiones.filter(c=>c.id!==nueva.id && c.anioInicio<nueva.anioInicio).sort((a,b)=>b.anioInicio-a.anioInicio)[0]; if(!prev) return 0;
+  const salto=nueva.anioInicio-prev.anioInicio;
+  const mapF={}; (prev.fiestas||[]).forEach(f=>{ const g=(nueva.fiestas||[]).find(x=>x.tipo===f.tipo && (f.tipo!=='otro' || x.nombre===f.nombre)); if(g) mapF[f.id]=g.id; });
+  let n=0;
+  tareasDe(prev.id).filter(t=>t.repite).forEach(t=>{
+    let f=''; if(t.fecha&&/^\d{4}-/.test(t.fecha)) f=(Number(t.fecha.slice(0,4))+salto)+t.fecha.slice(4);
+    db.tareas.push({id:uid(),comisionId:nueva.id,fiestaId:mapF[t.fiestaId]||'',titulo:t.titulo,fecha:f,responsable:'',nota:t.nota||'',repite:true,hecha:false,creado:new Date().toISOString()}); n++;
+  });
+  return n;
 }
 
 /* ============ PRÉSTAMOS (material de la comisión que se deja a vecinos) ============ */
@@ -3028,6 +3158,16 @@ document.getElementById('catOptions').addEventListener('click',e=>{
 document.addEventListener('click',e=>{ if(!e.target.closest('#catPop') && !e.target.closest('#catBtn')) closeCatPop(); });
 
 document.getElementById('mReciboFile').onchange=function(){ handleReciboFile(this); };
+
+/* Guardar tarea */
+document.getElementById('taGuardar').onclick=()=>{
+  const c=activa(); if(!c) return;
+  const titulo=document.getElementById('taTitulo').value.trim(); if(!titulo){ alert('Escribe qué hay que hacer.'); return; }
+  const data={titulo, fecha:document.getElementById('taFecha').value, fiestaId:document.getElementById('taFiesta').value, responsable:document.getElementById('taResp').value.trim(), nota:document.getElementById('taNota').value.trim(), repite:document.getElementById('taRepite').checked, mod:new Date().toISOString()};
+  if(tarEditId){ Object.assign(db.tareas.find(x=>x.id===tarEditId),data); }
+  else db.tareas.push(Object.assign({id:uid(),comisionId:c.id,hecha:false,creado:new Date().toISOString()},data));
+  save(); closeModal('tareaModal'); render();
+};
 
 /* Guardar préstamo */
 document.getElementById('psGuardar').onclick=()=>{
