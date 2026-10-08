@@ -235,6 +235,49 @@
   .doc-prev iframe{width:100%;height:100%;border:0;background:#fff;pointer-events:none}
   .doc-pie{display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:1px solid var(--line)}
   .doc-pie .nm{flex:1;font-size:13px;color:var(--muted)}
+  /* ===== MODO SOLO LECTURA (app del móvil para el resto de la comisión) ===== */
+  body.solo-lectura [onclick*="openMov"],
+  body.solo-lectura [onclick*="delMov"],
+  body.solo-lectura [onclick*="adjuntarRapido"],
+  body.solo-lectura [onclick*="borrarDoc"],
+  body.solo-lectura [onclick*="openCategorias"],
+  body.solo-lectura [onclick*="openStockItem"],
+  body.solo-lectura [onclick*="delStockItem"],
+  body.solo-lectura [onclick*="openStMov"],
+  body.solo-lectura [onclick*="delStMov"],
+  body.solo-lectura [onclick*="openStockCats"],
+  body.solo-lectura [onclick*="openNota"],
+  body.solo-lectura [onclick*="delNota"],
+  body.solo-lectura [onclick*="openPremio"],
+  body.solo-lectura [onclick*="delPremio"],
+  body.solo-lectura [onclick*="prPlantilla"],
+  body.solo-lectura [onclick*="openPrestamo"],
+  body.solo-lectura [onclick*="delPrestamo"],
+  body.solo-lectura [onclick*="openDevolucion"],
+  body.solo-lectura [onclick*="deshacerDevolucion"],
+  body.solo-lectura [onclick*="openContacto"],
+  body.solo-lectura [onclick*="delContacto"],
+  body.solo-lectura [onclick*="ctAddPersona"],
+  body.solo-lectura [onclick*="openComi"],
+  body.solo-lectura [onclick*="delComi"],
+  body.solo-lectura [onclick*="setActiva"],
+  body.solo-lectura [onclick*="reabrir"],
+  body.solo-lectura [onclick*="cerrar("],
+  body.solo-lectura [onclick*="openFiestas"],
+  body.solo-lectura [onclick*="addFiesta"],
+  body.solo-lectura [onclick*="delFiesta"],
+  body.solo-lectura [onclick*="restaurarItem"],
+  body.solo-lectura [onclick*="purgarItem"],
+  body.solo-lectura [onclick*="vaciarPapelera"],
+  body.solo-lectura [onclick*="abrirCopias"],
+  body.solo-lectura [onclick*="cargarCopiaIdx"],
+  body.solo-lectura [onclick*="reintentarGuardado"],
+  body.solo-lectura [onclick*="quitarAdj"],
+  body.solo-lectura #docsAdd, body.solo-lectura .tb-movs .primary, body.solo-lectura .st-mov,
+  body.solo-lectura #movilCard{display:none !important}
+  body.solo-lectura .adj-no{display:none !important}
+  .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
+  body.solo-lectura .ro-badge{display:inline-block}
   /* App del móvil: en Movimientos solo el filtro de fiesta (el resto, en el ordenador) */
   .app-movil .tb-movs > :not(#fFiesta):not(.pill):not(.primary){display:none !important}
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
@@ -361,6 +404,7 @@
   <h1><span class="logo">🎉</span> Contabilidad Josa</h1>
   <div class="spacer"></div>
   <span id="syncBadge" title="Estado del guardado" style="display:none"></span>
+  <span class="ro-badge" title="Esta app solo permite ver los datos">👀 Solo lectura</span>
   <button onclick="window.open('guia.html','_blank')" title="Guía de uso" style="padding:8px 12px">❓ Guía</button>
   <div class="comi-pick">
     <label>Comisión:</label>
@@ -668,6 +712,7 @@ let serverMode=false;
 /* ===== MODO MÓVIL: la app publicada en GitHub Pages lee y guarda directamente en el GitHub privado ===== */
 const ES_APP_MOVIL = /\.github\.io$/.test(location.hostname) || /[?&]movil\b/.test(location.search);
 const GH_KEY='cf_gh';
+let soloLectura=false;   // app del móvil del resto de la comisión: solo ver
 let ghMode=false, GH=null, ghSha=null, ghGuardando=false, ghPendiente=null, ghCache={};   // true = guarda ficheros en la carpeta vía servidor
 let state={tab:'resumen',editMovId:null,editComiId:null,movTipo:'gasto',filtro:{fiesta:'',tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:''}};
 let sync={status:'',msg:''}; // browser|ok|subiendo|error
@@ -826,6 +871,7 @@ async function ghLeerDatos(){
   return {sha:j.sha, txt};
 }
 function ghGuardar(json){
+  if(soloLectura) return;
   ghPendiente=json; setSync('subiendo');
   if(!ghGuardando) ghSubir();
 }
@@ -857,19 +903,19 @@ async function ghConflicto(mio){
   }catch(e){ setSync('error','Conflicto al guardar: '+e.message); }
 }
 async function ghRefrescar(){
-  if(!ghMode || ghGuardando || ghPendiente || hayCambiosSinGuardar() || document.querySelector('.modal-bg.show')) return;
+  if(!ghMode || ghGuardando || ghPendiente || (!soloLectura && hayCambiosSinGuardar()) || document.querySelector('.modal-bg.show')) return;
   try{
     const rem=await ghLeerDatos();
     if(rem.sha===ghSha) return;
     ghSha=rem.sha;
-    if(rem.txt!==JSON.stringify(db)){ const y=window.scrollY; db=normaliza(JSON.parse(rem.txt)); lastConfirmedJson=JSON.stringify(db); try{localStorage.setItem(LS_KEY,lastConfirmedJson);}catch(_){} render(); window.scrollTo(0,y); avisoBreve('🔄 Actualizado con los cambios del portátil'); }
+    if(rem.txt!==JSON.stringify(db)){ const y=window.scrollY, miActiva=db.activaId; db=normaliza(JSON.parse(rem.txt)); if(soloLectura && db.comisiones.some(c=>c.id===miActiva)) db.activaId=miActiva; lastConfirmedJson=JSON.stringify(db); try{localStorage.setItem(LS_KEY,lastConfirmedJson);}catch(_){} render(); window.scrollTo(0,y); avisoBreve('🔄 Actualizado con los cambios del portátil'); }
   }catch(_){}
 }
 function ghConfigDeEnlace(){
   const m=/[#&]conectar=([^&]+)/.exec(location.hash||''); if(!m) return;
   try{
     const c=JSON.parse(b64aUtf8(decodeURIComponent(m[1])));
-    if(c&&c.t){ localStorage.setItem(GH_KEY,JSON.stringify({t:c.t,o:c.o||'ComisionJosa',r:c.r||'contabilidad-fiestas',b:c.b||'main'})); }
+    if(c&&c.t){ localStorage.setItem(GH_KEY,JSON.stringify({t:c.t,o:c.o||'ComisionJosa',r:c.r||'contabilidad-fiestas',b:c.b||'main',ro:!!c.ro})); }
   }catch(_){}
   history.replaceState(null,'',location.pathname+location.search);
 }
@@ -896,6 +942,8 @@ async function bootMovil(){
   if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
   if(!GH||!GH.t){ db=initDB(); pantallaConectar(); return; }
   ghMode=true;
+  soloLectura=!!GH.ro;
+  if(soloLectura){ document.body.classList.add('solo-lectura'); document.title='Cont. Josa · ver'; }
   try{
     const rem=await ghLeerDatos(); ghSha=rem.sha;
     db=normaliza(JSON.parse(rem.txt));
@@ -994,6 +1042,7 @@ async function vigilarActualizacion(){
 
 /* ============ GUARDADO SEGURO ============ */
 function save(){
+  if(soloLectura){ return true; }   // solo lectura: los cambios de vista (p.ej. elegir comisión) no se guardan
   const json=JSON.stringify(db);
   try{
     localStorage.setItem(LS_KEY,json);
@@ -1415,7 +1464,14 @@ function renderComisiones(){
 
 function renderAjustes(){
   const nMov=db.movimientos.length,nComi=db.comisiones.length;let snaps=[];try{snaps=JSON.parse(localStorage.getItem(LS_SNAP))||[];}catch(e){}
-  const modoCard = ghMode
+  const modoCard = (ghMode && soloLectura)
+    ? `<div class="card" style="grid-column:1/-1">
+        <div class="section-title"><h2 style="font-size:17px">👀 App de solo lectura</h2><span class="pill">Comisión de Fiestas de Josa</span></div>
+        <p class="muted">Desde aquí puedes ver todos los datos reales de la comisión (cuentas, stock, anotaciones, premios, préstamos…), pero no cambiarlos. Lo que se apunta en la app principal aparece aquí solo.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"><button onclick="ghRefrescar().then(()=>avisoBreve('✅ Datos al día'))">🔄 Traer lo último ahora</button>
+        <button class="danger" onclick="if(confirm('¿Desconectar este móvil?')){ localStorage.removeItem(GH_KEY); location.reload(); }">🔌 Desconectar este móvil</button></div>
+      </div>`
+    : ghMode
     ? `<div class="card" style="grid-column:1/-1">
         <div class="section-title"><h2 style="font-size:17px">📱 App del móvil conectada</h2><span class="pill" style="border-color:var(--green)">${esc(GH.o+'/'+GH.r)}</span></div>
         <p class="muted">Lo que apuntas aquí se guarda directamente en el GitHub de la comisión y el portátil lo recibe solo. Lo que se apunta en el portátil aparece aquí al abrir la app o a los pocos segundos.</p>
@@ -1465,6 +1521,7 @@ function renderAjustes(){
 }
 /* ---- Portátil: conectar el móvil (llave de GitHub + QR) ---- */
 const URL_APP_MOVIL='https://comisionjosa.github.io/contabilidad-josa-app/';
+const URL_CREAR_LLAVE_RO='https://github.com/settings/personal-access-tokens/new?name='+encodeURIComponent('Contabilidad Josa - solo ver')+'&description='+encodeURIComponent('App del movil del resto de la comision: solo leer')+'&target_name=ComisionJosa&expires_in=none&contents=read';
 const URL_CREAR_LLAVE='https://github.com/settings/personal-access-tokens/new?name='+encodeURIComponent('Contabilidad Josa - movil')+'&description='+encodeURIComponent('Para la app del movil: leer y guardar las cuentas')+'&target_name=ComisionJosa&expires_in=none&contents=write';
 function pintarMovilCard(){
   const g=document.querySelector('#content .grid'); if(!g || document.getElementById('movilCard')) return;
@@ -1478,20 +1535,32 @@ function pintarMovilCard(){
       <li><b>Pega la llave</b>: <input type="password" id="llaveMovil" placeholder="github_pat_…" value="${esc(llave)}" style="width:min(420px,100%)"></li>
       <li><button class="primary" onclick="mostrarQRMovil()">📷 Mostrar QR</button> y escanéalo con la cámara del móvil. Se abre la app: en Chrome, menú ⋮ → <b>Instalar aplicación</b> (o «Añadir a pantalla de inicio»).</li>
     </ol>
-    <div id="qrMovil" style="display:none;text-align:center;margin-top:10px"></div>`;
+    <div id="qrMovil" style="display:none;text-align:center;margin-top:10px"></div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+    <h3 style="margin:0 0 6px;font-size:15.5px">👥 Para el resto de la comisión: <span style="color:#e3d6ff">solo ver</span></h3>
+    <p class="muted" style="margin:0 0 8px">Con este otro QR, los demás ven todos los datos reales en su móvil pero <b>no pueden cambiar nada</b>. Usa una llave distinta, que solo permite leer.</p>
+    <ol style="line-height:1.8;margin:8px 0 12px">
+      <li><b>Crear la llave de solo lectura</b> (una vez): <button onclick="window.open(URL_CREAR_LLAVE_RO,'_blank')">🔑 Abrir GitHub (llave de solo lectura)</button><br>
+        <span class="muted" style="font-size:12.5px">Igual que la otra: cuenta <b>ComisionJosa</b>, <b>Only select repositories → contabilidad-fiestas</b>, y comprueba que en permisos pone <b>Contents: Read-only</b>. Copia la llave.</span></li>
+      <li><b>Pega la llave</b>: <input type="password" id="llaveMovilRO" placeholder="github_pat_…" value="${esc((()=>{try{return localStorage.getItem('cf_llave_ro')||''}catch(_){return ''}})())}" style="width:min(420px,100%)"></li>
+      <li><button class="primary" onclick="mostrarQRMovil(true)">👥 Mostrar QR de solo lectura</button> y que lo escanee cada uno con su móvil (luego ⋮ → Instalar aplicación).</li>
+    </ol>
+    <div id="qrMovilRO" style="display:none;text-align:center;margin-top:10px"></div>`;
   g.prepend(d);
 }
-function mostrarQRMovil(){
-  const t=(document.getElementById('llaveMovil').value||'').trim();
+function mostrarQRMovil(ro){
+  const t=(document.getElementById(ro?'llaveMovilRO':'llaveMovil').value||'').trim();
   if(!/^(github_pat_|ghp_)/.test(t)){ alert('Pega primero la llave de GitHub (empieza por github_pat_).'); return; }
-  try{ localStorage.setItem('cf_llave_movil',t); }catch(_){}
-  const cfg=utf8aB64(JSON.stringify({t,o:'ComisionJosa',r:'contabilidad-fiestas',b:'main'}));
+  if(ro){ const tw=(document.getElementById('llaveMovil').value||'').trim(); if(tw && tw===t){ alert('Esa es la llave que permite cambiar cosas. Para el resto de la comisión crea la llave de SOLO LECTURA con el botón 🔑 de este apartado.'); return; } }
+  try{ localStorage.setItem(ro?'cf_llave_ro':'cf_llave_movil',t); }catch(_){}
+  const cfg=utf8aB64(JSON.stringify(Object.assign({t,o:'ComisionJosa',r:'contabilidad-fiestas',b:'main'},ro?{ro:true}:{})));
   const url=URL_APP_MOVIL+'#conectar='+encodeURIComponent(cfg);
   const qr=qrcode(0,'L'); qr.addData(url); qr.make();
-  const box=document.getElementById('qrMovil'); box.style.display='';
+  const box=document.getElementById(ro?'qrMovilRO':'qrMovil'); box.style.display='';
   box.innerHTML=`<div style="display:inline-block;background:#fff;padding:16px;border-radius:14px">${qr.createSvgTag({cellSize:5,margin:2,scalable:false})}</div>
-    <p class="muted" style="font-size:12.5px;max-width:520px;margin:10px auto 0">⚠️ Este QR lleva la llave dentro: no le hagas foto ni lo mandes a nadie. Si alguna vez se pierde el móvil, borra la llave en GitHub (Settings → Developer settings → Personal access tokens) y crea otra.</p>
-    <p style="margin-top:8px"><button onclick="document.getElementById('qrMovil').style.display='none'">Ocultar QR</button></p>`;
+    ${ro?`<p class="muted" style="font-size:12.5px;max-width:520px;margin:10px auto 0">👥 QR de <b>solo lectura</b>: con él solo se pueden ver los datos. Aun así, pásalo solo a gente de la comisión (en persona o por WhatsApp a cada uno): quien lo tenga puede ver las cuentas. Si quieres cortar el acceso a todos, borra esta llave en GitHub y crea otra.</p>`
+       :`<p class="muted" style="font-size:12.5px;max-width:520px;margin:10px auto 0">⚠️ Este QR lleva la llave dentro: no le hagas foto ni lo mandes a nadie. Si alguna vez se pierde el móvil, borra la llave en GitHub (Settings → Developer settings → Personal access tokens) y crea otra.</p>`}
+    <p style="margin-top:8px">${ro?`<button class="primary" onclick="navigator.clipboard.writeText(${esc(JSON.stringify(url))}).then(()=>avisoBreve('📋 Enlace copiado: pégalo en WhatsApp a cada uno'),()=>prompt('Copia este enlace:',${esc(JSON.stringify(url))}))">📋 Copiar enlace de solo lectura</button> `:''}<button onclick="document.getElementById('${ro?'qrMovilRO':'qrMovil'}').style.display='none'">Ocultar QR</button></p>`;
 }
 async function cargarInfoCarpeta(){
   try{
