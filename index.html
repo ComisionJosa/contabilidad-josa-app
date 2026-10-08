@@ -1548,6 +1548,12 @@ function pintarMovilCard(){
     <div id="qrMovilRO" style="display:none;text-align:center;margin-top:10px"></div>`;
   g.prepend(d);
 }
+let ultimoEnlaceRO='';
+function enviarRoWhatsApp(){
+  if(!ultimoEnlaceRO) return;
+  const msg='📱 App de la Comisión de Fiestas de Josa (solo para ver las cuentas, el stock, las anotaciones...).\n\n1️⃣ Abre este enlace en el móvil (con Chrome):\n'+ultimoEnlaceRO+'\n\n2️⃣ Cuando se abra, pulsa el menú ⋮ de arriba a la derecha → «Instalar aplicación».\n\nYa tendrás el icono «Cont. Josa» en el móvil. No se puede cambiar nada, solo ver.';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
 function mostrarQRMovil(ro){
   const t=(document.getElementById(ro?'llaveMovilRO':'llaveMovil').value||'').trim();
   if(!/^(github_pat_|ghp_)/.test(t)){ alert('Pega primero la llave de GitHub (empieza por github_pat_).'); return; }
@@ -1555,12 +1561,13 @@ function mostrarQRMovil(ro){
   try{ localStorage.setItem(ro?'cf_llave_ro':'cf_llave_movil',t); }catch(_){}
   const cfg=utf8aB64(JSON.stringify(Object.assign({t,o:'ComisionJosa',r:'contabilidad-fiestas',b:'main'},ro?{ro:true}:{})));
   const url=URL_APP_MOVIL+'#conectar='+encodeURIComponent(cfg);
+  if(ro) ultimoEnlaceRO=url;
   const qr=qrcode(0,'L'); qr.addData(url); qr.make();
   const box=document.getElementById(ro?'qrMovilRO':'qrMovil'); box.style.display='';
   box.innerHTML=`<div style="display:inline-block;background:#fff;padding:16px;border-radius:14px">${qr.createSvgTag({cellSize:5,margin:2,scalable:false})}</div>
     ${ro?`<p class="muted" style="font-size:12.5px;max-width:520px;margin:10px auto 0">👥 QR de <b>solo lectura</b>: con él solo se pueden ver los datos. Aun así, pásalo solo a gente de la comisión (en persona o por WhatsApp a cada uno): quien lo tenga puede ver las cuentas. Si quieres cortar el acceso a todos, borra esta llave en GitHub y crea otra.</p>`
        :`<p class="muted" style="font-size:12.5px;max-width:520px;margin:10px auto 0">⚠️ Este QR lleva la llave dentro: no le hagas foto ni lo mandes a nadie. Si alguna vez se pierde el móvil, borra la llave en GitHub (Settings → Developer settings → Personal access tokens) y crea otra.</p>`}
-    <p style="margin-top:8px">${ro?`<button class="primary" onclick="navigator.clipboard.writeText(${esc(JSON.stringify(url))}).then(()=>avisoBreve('📋 Enlace copiado: pégalo en WhatsApp a cada uno'),()=>prompt('Copia este enlace:',${esc(JSON.stringify(url))}))">📋 Copiar enlace de solo lectura</button> `:''}<button onclick="document.getElementById('${ro?'qrMovilRO':'qrMovil'}').style.display='none'">Ocultar QR</button></p>`;
+    <p style="margin-top:8px">${ro?`<button class="primary" onclick="navigator.clipboard.writeText(${esc(JSON.stringify(url))}).then(()=>avisoBreve('📋 Enlace copiado: pégalo en WhatsApp a cada uno'),()=>prompt('Copia este enlace:',${esc(JSON.stringify(url))}))">📋 Copiar enlace de solo lectura</button> <button class="primary" onclick="enviarRoWhatsApp()">💬 Enviar por WhatsApp</button> `:''}<button onclick="document.getElementById('${ro?'qrMovilRO':'qrMovil'}').style.display='none'">Ocultar QR</button></p>`;
 }
 async function cargarInfoCarpeta(){
   try{
