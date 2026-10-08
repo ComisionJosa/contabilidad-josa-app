@@ -238,6 +238,54 @@
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  /* ---- Préstamos ---- */
+  .pr-estado{display:inline-block;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+  .pr-estado.prestado{background:#3a2a0e;color:#ffc76b;border:1px solid #6b4a14}
+  .pr-estado.devuelto{background:#123524;color:var(--green);border:1px solid #1d5a3a}
+  .pres-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:4px 14px}
+  .pres-card.prestado{box-shadow:inset 4px 0 0 #f5a623}
+  .pres-card.devuelto{box-shadow:inset 4px 0 0 var(--green);opacity:.92}
+  .pres-card .obj{font-weight:700;font-size:15.5px}
+  .pres-card .who{color:#cfd9e4}
+  .pres-card .meta{font-size:12.5px;color:var(--muted)}
+  .pres-card .acc{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .pres-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
+  .firma-box{position:relative;background:#fff;border:2px dashed #9aa7b5;border-radius:10px;height:170px;touch-action:none}
+  .firma-box canvas{width:100%;height:100%;display:block;border-radius:8px;cursor:crosshair}
+  .firma-box .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa7b5;pointer-events:none;font-size:14px}
+  .firma-box .linea{position:absolute;left:8%;right:8%;bottom:34px;border-bottom:1px solid #c7ced6;pointer-events:none}
+  /* Documento formal (hoja en pantalla, imprimible) */
+  #docPres{position:fixed;inset:0;z-index:350;background:rgba(0,0,0,.75);overflow:auto;display:none;padding:18px}
+  #docPres.show{display:block}
+  #docPres .barra{max-width:800px;margin:0 auto 12px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  .hoja{background:#fff;color:#111;max-width:800px;margin:0 auto;padding:44px 52px;border-radius:6px;font-family:Georgia,"Times New Roman",serif;font-size:14.5px;line-height:1.55;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .hoja .cab{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #333;padding-bottom:14px;margin-bottom:18px}
+  .hoja .org{font-size:18px;font-weight:700;letter-spacing:.3px}
+  .hoja .org small{display:block;font-weight:400;font-size:12.5px;color:#555;letter-spacing:0}
+  .hoja .num{text-align:right;font-size:13px;color:#333}
+  .hoja .num b{display:block;font-size:17px}
+  .hoja h1{font-size:19px;text-align:center;margin:6px 0 18px;text-transform:uppercase;letter-spacing:1px}
+  .hoja table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:14px}
+  .hoja th,.hoja td{border:1px solid #bbb;padding:7px 10px;text-align:left;vertical-align:top}
+  .hoja th{background:#f2f2f2 !important;width:34%;font-weight:600;color:#222 !important;text-transform:none !important;letter-spacing:0 !important;font-size:13.5px !important;position:static !important}
+  .hoja table{border-radius:0 !important;overflow:visible !important}
+  .hoja td,.hoja th{padding:7px 10px !important;border:1px solid #bbb !important}
+  .hoja tr td{background:#fff !important}
+  .hoja tr:hover td{background:#fff !important}
+  .hoja .sello{display:inline-block;border:2px solid #137a37;color:#137a37;font-weight:700;padding:4px 12px;border-radius:6px;transform:rotate(-4deg);font-family:Arial,sans-serif;letter-spacing:1px}
+  .hoja .sello.p{border-color:#b7791f;color:#b7791f}
+  .hoja .firmas{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:22px}
+  .hoja .firma{text-align:center;font-size:13px}
+  .hoja .firma .img{height:110px;display:flex;align-items:flex-end;justify-content:center;border-bottom:1px solid #333;margin-bottom:6px}
+  .hoja .firma img{max-height:105px;max-width:100%}
+  .hoja .pie{margin-top:26px;font-size:11.5px;color:#666;text-align:center;border-top:1px solid #ddd;padding-top:8px}
+  @media(max-width:720px){ .hoja{padding:24px 18px;font-size:13.5px} .hoja .firmas{grid-template-columns:1fr} .pres-lista{grid-template-columns:1fr} }
+  @media print{
+    body.imprimiendo > *:not(#docPres){display:none !important}
+    body.imprimiendo #docPres{position:static;background:#fff;padding:0;display:block !important}
+    body.imprimiendo #docPres .barra{display:none}
+    body.imprimiendo .hoja{box-shadow:none;max-width:none;padding:10mm 12mm;border-radius:0}
+  }
   .stat.clic{cursor:pointer;transition:border-color .15s,transform .15s}
   .stat.clic:hover{border-color:var(--acc);transform:translateY(-1px)}
   .stat.clic .ver{font-size:11.5px;color:var(--muted);margin-top:auto}
@@ -313,6 +361,7 @@
   <button data-tab="stock">📦 Stock</button>
   <button data-tab="notas">📝 Anotaciones</button>
   <button data-tab="premios">🏆 Concursos</button>
+  <button data-tab="prestamos">🤝 Préstamos</button>
   <button data-tab="contactos">📇 Contactos</button>
   <button data-tab="comisiones">🗂️ Comisiones</button>
 </nav>
@@ -470,6 +519,53 @@
   <div class="modal-actions"><button class="ghost" onclick="closeModal('stMovModal')">Cancelar</button><button class="primary" id="smGuardar">Apuntar</button></div>
 </div></div>
 
+<!-- MODAL PRÉSTAMO -->
+<div class="modal-bg" id="presModal"><div class="modal" style="max-width:680px">
+  <h3 id="presTitulo">Nuevo préstamo</h3>
+  <div class="field"><label>¿Qué se presta? <span class="muted" style="font-weight:400">(una cosa por línea; puedes poner la cantidad delante: «2 ollas grandes»)</span></label>
+    <textarea id="psObjetos" rows="3" placeholder="Ej: 1 olla grande de 50 L&#10;2 mesas plegables"></textarea></div>
+  <div class="field two">
+    <div style="flex:2"><label>¿A quién?</label><input type="text" id="psPersona" placeholder="Nombre y apellidos" list="psPersonas"><datalist id="psPersonas"></datalist></div>
+    <div><label>Fecha del préstamo</label><input type="date" id="psFecha"></div>
+  </div>
+  <div class="field two">
+    <div><label>Teléfono (opcional)</label><input type="tel" id="psTel" placeholder="600 000 000"></div>
+    <div><label>DNI (opcional)</label><input type="text" id="psDni" placeholder=""></div>
+    <div><label>Devolver antes de (opcional)</label><input type="date" id="psPrevista"></div>
+  </div>
+  <div class="field two">
+    <div><label>Lo entrega (de la comisión)</label><input type="text" id="psEntrega" placeholder="Nombre de quien lo deja" list="psEntregas"><datalist id="psEntregas"></datalist></div>
+    <div style="flex:2"><label>Notas / estado del material (opcional)</label><input type="text" id="psNotas" placeholder="Ej: se entrega limpia y sin golpes"></div>
+  </div>
+  <div class="field"><label>✍️ Firma de quien lo recibe</label>
+    <div class="firma-box" id="psFirmaBox"><div class="linea"></div><div class="ph">Firme aquí con el dedo o el ratón</div><canvas></canvas></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span class="muted" style="font-size:12px" id="psFirmaInfo"></span><button type="button" class="ghost" onclick="firmaPs.limpiar()">↺ Borrar firma</button></div>
+  </div>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('presModal')">Cancelar</button><button class="primary" id="psGuardar">Guardar préstamo</button></div>
+</div></div>
+
+<!-- MODAL DEVOLUCIÓN -->
+<div class="modal-bg" id="devModal"><div class="modal" style="max-width:620px">
+  <h3 id="devTitulo">✅ Marcar como devuelto</h3>
+  <div id="devResumen" class="muted" style="font-size:13px;margin:-6px 0 12px"></div>
+  <div class="field two">
+    <div><label>Fecha de devolución</label><input type="date" id="dvFecha"></div>
+    <div><label>¿Cómo vuelve?</label><select id="dvEstado"><option value="Bien">👍 Bien, todo correcto</option><option value="Con desperfectos">⚠️ Con desperfectos</option><option value="Incompleto">❗ Falta algo</option></select></div>
+  </div>
+  <div class="field two">
+    <div><label>Lo recoge (de la comisión)</label><input type="text" id="dvRecoge" placeholder="Nombre" list="psEntregas"></div>
+    <div style="flex:2"><label>Nota (opcional)</label><input type="text" id="dvNota" placeholder="Ej: la tapa vuelve abollada"></div>
+  </div>
+  <div class="field"><label>✍️ Firma de quien lo devuelve (opcional)</label>
+    <div class="firma-box" id="dvFirmaBox"><div class="linea"></div><div class="ph">Firme aquí (opcional)</div><canvas></canvas></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:6px"><button type="button" class="ghost" onclick="firmaDv.limpiar()">↺ Borrar firma</button></div>
+  </div>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('devModal')">Cancelar</button><button class="primary" id="dvGuardar">✅ Marcar devuelto</button></div>
+</div></div>
+
+<!-- DOCUMENTO FORMAL DEL PRÉSTAMO -->
+<div id="docPres"><div class="barra"><button class="primary" onclick="imprimirDocPres()">🖨️ Imprimir / Guardar PDF</button><button onclick="cerrarDocPres()">✕ Cerrar</button></div><div id="docPresHoja"></div></div>
+
 <!-- MODAL PREMIO / CONCURSO -->
 <div class="modal-bg" id="premioModal"><div class="modal" style="max-width:720px">
   <h3 id="premioModalTitle">Nuevo premio</h3>
@@ -591,6 +687,7 @@ function normaliza(d){
   d.contactos = Array.isArray(d.contactos)?d.contactos:[];
   d.notas = Array.isArray(d.notas)?d.notas:[];
   d.premios = Array.isArray(d.premios)?d.premios:[];
+  d.prestamos = Array.isArray(d.prestamos)?d.prestamos:[];
   d.stockCats = Array.isArray(d.stockCats)?d.stockCats:[];
   // stock ahora es POR COMISIÓN
   d.comisiones.forEach(c=>{ if(!Array.isArray(c.stock)) c.stock=[]; });
@@ -971,7 +1068,7 @@ function render(){
   document.getElementById('nav').style.display=state.tab==='ajustes'?'none':'';
   medirBarras();
   if(!activa()){content.innerHTML='<div class="empty">No hay comisiones. Créala en la pestaña Comisiones.</div>';return;}
-  ({resumen:renderResumen,movs:renderMovs,panel:renderPanel,contactos:renderContactos,notas:renderNotas,premios:renderPremios,stock:renderStock,comisiones:renderComisiones,ajustes:renderAjustes}[state.tab])();
+  ({resumen:renderResumen,movs:renderMovs,panel:renderPanel,contactos:renderContactos,notas:renderNotas,premios:renderPremios,prestamos:renderPrestamos,stock:renderStock,comisiones:renderComisiones,ajustes:renderAjustes}[state.tab])();
   if(state.tab==='ajustes') content.insertAdjacentHTML('afterbegin',`<div class="section-title" style="border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px"><h2>⚙️ Copias y datos</h2><button class="primary" onclick="cerrarAjustes()" title="Volver al programa (Esc)">✕ Cerrar</button></div>`);
 }
 function renderComiSelect(){
@@ -1630,8 +1727,8 @@ function delMov(id){
   save(); render();
 }
 /* ============ PAPELERA (unificada: movimientos, contactos, categorías, comisiones) ============ */
-const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆'};
-const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso'};
+const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝'};
+const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo'};
 function papeleraPush(tipo,titulo,payload){ db.papelera.push({id:uid(),tipo,titulo:titulo||'',deletedAt:new Date().toISOString(),payload}); }
 function fmtFechaHora(iso){ if(!iso)return ''; const s=String(iso); const d=s.slice(0,10).split('-'); return (d.length===3?`${d[2]}/${d[1]}/${d[0]}`:s.slice(0,10))+' '+s.slice(11,16); }
 function openPapelera(){ paintPapelera(); showModal('papeleraModal'); }
@@ -1656,6 +1753,7 @@ function restaurarItem(pid){
   } else if(it.tipo==='contacto'){ db.contactos.push(it.payload); }
   else if(it.tipo==='nota'){ db.notas.push(it.payload); }
   else if(it.tipo==='premio'){ db.premios.push(it.payload); }
+  else if(it.tipo==='prestamo'){ db.prestamos.push(it.payload); }
   else if(it.tipo==='categoria'){ const nm=it.payload.nombre; if(catNames().some(c=>normName(c)===normName(nm))){ alert('Ya existe una categoría "'+nm+'". No se restaura para no duplicar.'); return; } db.categorias.push(it.payload); }
   else if(it.tipo==='comision'){ const p=it.payload; if(db.comisiones.some(c=>c.id===p.comision.id)){ alert('Esa comisión ya existe.'); return; } db.comisiones.push(p.comision); (p.movimientos||[]).forEach(m=>db.movimientos.push(m)); }
   else if(it.tipo==='adjunto'){ const p=it.payload||{}; const m=db.movimientos.find(x=>x.id===p.movId); if(!m){ alert('No se puede restaurar: el movimiento de este documento ya no existe.'); return; } m.recibos=adjuntosDe(m).concat([p.adj]); delete m.recibo; }
@@ -1887,6 +1985,163 @@ function prPlantilla(){
   });
   save(); prComi=act.id; prFiesta=''; renderPremios();
 }
+
+/* ============ PRÉSTAMOS (material de la comisión que se deja a vecinos) ============ */
+let presFiltro='prestado', presSearch='', presEditId=null, presDevId=null;
+function prestamos(){ return Array.isArray(db.prestamos)?db.prestamos:[]; }
+function hoyYMD(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function presNumero(fecha){
+  const y=(fecha||hoyYMD()).slice(0,4);
+  const n=prestamos().filter(p=>(p.numero||'').startsWith('P-'+y+'-')).map(p=>parseInt(p.numero.slice(7))||0);
+  return 'P-'+y+'-'+String((n.length?Math.max(...n):0)+1).padStart(3,'0');
+}
+function presObjetos(p){ return String(p.objetos||'').split('\n').map(x=>x.trim()).filter(Boolean); }
+/* Panel de firma: dedo, lápiz o ratón. Devuelve {vacia(), png(), limpiar(), cargar(src)} */
+function crearFirma(boxId){
+  const box=document.getElementById(boxId), cv=box.querySelector('canvas'), ph=box.querySelector('.ph');
+  let ctx, dibujando=false, hay=false, last=null;
+  function ajustar(){ const r=cv.getBoundingClientRect(); if(!r.width) return; const dpr=window.devicePixelRatio||1;
+    cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+    ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#0d2a63'; hay=false; ph.style.display=''; }
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  cv.addEventListener('pointerdown',e=>{ if(!ctx) ajustar(); e.preventDefault(); cv.setPointerCapture(e.pointerId); dibujando=true; last=pos(e); ctx.beginPath(); ctx.arc(last.x,last.y,1.1,0,Math.PI*2); ctx.fillStyle='#0d2a63'; ctx.fill(); hay=true; ph.style.display='none'; });
+  cv.addEventListener('pointermove',e=>{ if(!dibujando) return; e.preventDefault(); const p=pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; });
+  const fin=()=>{ dibujando=false; }; cv.addEventListener('pointerup',fin); cv.addEventListener('pointercancel',fin);
+  return {
+    preparar(){ ajustar(); },
+    vacia(){ return !hay; },
+    limpiar(){ ajustar(); },
+    png(){ // recorta los bordes blancos para que la firma ocupe poco
+      if(!hay) return '';
+      const w=cv.width,h=cv.height,d=ctx.getImageData(0,0,w,h).data; let x0=w,y0=h,x1=0,y1=0;
+      for(let y=0;y<h;y+=2) for(let x=0;x<w;x+=2){ if(d[(y*w+x)*4+3]>0){ if(x<x0)x0=x; if(y<y0)y0=y; if(x>x1)x1=x; if(y>y1)y1=y; } }
+      const m=10; x0=Math.max(0,x0-m); y0=Math.max(0,y0-m); x1=Math.min(w,x1+m); y1=Math.min(h,y1+m);
+      const out=document.createElement('canvas'); const esc2=Math.min(1,500/(x1-x0||1)); out.width=Math.max(1,Math.round((x1-x0)*esc2)); out.height=Math.max(1,Math.round((y1-y0)*esc2));
+      out.getContext('2d').drawImage(cv,x0,y0,x1-x0,y1-y0,0,0,out.width,out.height);
+      return out.toDataURL('image/png');
+    }
+  };
+}
+let firmaPs=null, firmaDv=null;
+function renderPrestamos(){
+  const todos=prestamos();
+  const q=presSearch.toLowerCase();
+  const nPrest=todos.filter(p=>p.estado!=='devuelto').length, nDev=todos.length-nPrest;
+  const hoy=hoyYMD();
+  const tarde=todos.filter(p=>p.estado!=='devuelto'&&p.prevista&&p.prevista<hoy).length;
+  let list=todos.filter(p=>(presFiltro==='todos'||(presFiltro==='devuelto'?p.estado==='devuelto':p.estado!=='devuelto')) && (!q||[p.numero,p.objetos,p.persona,p.telefono,p.entrega,p.notas].join(' ').toLowerCase().includes(q)));
+  list.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')||(b.numero||'').localeCompare(a.numero||''));
+  let html=`<div class="section-title"><h2>🤝 Préstamos de material</h2><button class="primary" onclick="openPrestamo()">+ Nuevo préstamo</button></div>
+  <p class="muted" style="margin:-6px 0 12px">Lo que la comisión deja a vecinos (ollas, mesas, carpas…): qué, a quién y cuándo, con la firma de quien lo recibe y un documento oficial de la Comisión de Fiestas de Josa.</p>
+  <div class="grid cols-3" style="margin-bottom:14px">
+    <div class="card stat clic" onclick="presFiltro='prestado';renderPrestamos()"><span class="k">🟠 Prestado ahora</span><span class="v" style="color:#ffc76b">${nPrest}</span>${tarde?`<span class="muted" style="font-size:12px;color:#ff9b9b">⚠️ ${tarde} fuera de plazo</span>`:''}</div>
+    <div class="card stat clic" onclick="presFiltro='devuelto';renderPrestamos()"><span class="k">✅ Devueltos</span><span class="v money pos">${nDev}</span></div>
+    <div class="card stat clic" onclick="presFiltro='todos';renderPrestamos()"><span class="k">📋 Total registrados</span><span class="v">${todos.length}</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="nt-chips">${[['prestado','🟠 Prestados'],['devuelto','✅ Devueltos'],['todos','Todos']].map(([k,t])=>`<button class="${presFiltro===k?'on':''}" onclick="presFiltro='${k}';renderPrestamos()">${t}</button>`).join('')}</div>
+    <input type="text" id="psBuscar" placeholder="Buscar objeto, persona, nº…" value="${esc(presSearch)}" style="min-width:220px">
+    <span class="spacer"></span><span class="pill">${list.length} préstamo${list.length===1?'':'s'}</span></div>`;
+  if(!list.length) html+=`<div class="card empty">${todos.length?'No hay préstamos con este filtro.':'Todavía no hay préstamos registrados.'}<br><button class="primary" style="margin-top:12px" onclick="openPrestamo()">+ Registrar un préstamo</button></div>`;
+  else html+=`<div class="pres-lista">`+list.map(p=>{
+    const dev=p.estado==='devuelto', fuera=!dev&&p.prevista&&p.prevista<hoy;
+    return `<div class="pres-card ${dev?'devuelto':'prestado'}">
+      <div><div class="obj">${esc(presObjetos(p).join(' · ')||'(sin descripción)')}</div><div class="who">👤 ${esc(p.persona||'—')}${p.telefono?` · <a href="tel:${esc(p.telefono.replace(/\s/g,''))}">${esc(p.telefono)}</a>`:''}</div></div>
+      <div style="text-align:right"><span class="pr-estado ${dev?'devuelto':'prestado'}">${dev?'✅ Devuelto':'🟠 Prestado'}</span><div class="meta" style="margin-top:4px">${esc(p.numero||'')}</div></div>
+      <div class="meta" style="grid-column:1/-1">📅 Prestado el ${fmtFecha(p.fecha)}${p.entrega?' por '+esc(p.entrega):''}${p.prevista&&!dev?` · devolver antes del <span style="${fuera?'color:#ff9b9b;font-weight:700':''}">${fmtFecha(p.prevista)}${fuera?' ⚠️':''}</span>`:''}${dev?` · devuelto el <b style="color:var(--green)">${fmtFecha(p.devolucion)}</b>${p.devEstado&&p.devEstado!=='Bien'?' ('+esc(p.devEstado)+')':''}`:''} · ${p.firma?'✍️ firmado':'<span style="color:#ff9b9b">sin firma</span>'}</div>
+      <div class="acc"><button onclick="verDocPrestamo('${p.id}')">📄 Documento</button>${dev?`<button class="ghost" onclick="deshacerDevolucion('${p.id}')" title="Volver a ponerlo como prestado">↩ Deshacer devolución</button>`:`<button class="primary" onclick="openDevolucion('${p.id}')">✅ Marcar devuelto</button>`}<span class="spacer"></span><button class="icon-btn ghost" onclick="openPrestamo('${p.id}')" title="Editar">✏️</button><button class="icon-btn danger" onclick="delPrestamo('${p.id}')" title="Borrar">🗑️</button></div>
+    </div>`; }).join('')+`</div>`;
+  content.innerHTML=html;
+  document.getElementById('psBuscar').oninput=e=>{ presSearch=e.target.value; renderPrestamos(); focusEnd('psBuscar'); };
+}
+function openPrestamo(id){
+  presEditId=id||null;
+  const p=id?prestamos().find(x=>x.id===id):null;
+  document.getElementById('presTitulo').textContent=id?('Editar préstamo '+(p.numero||'')):'🤝 Nuevo préstamo';
+  const uniq=a=>[...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,'es'));
+  document.getElementById('psPersonas').innerHTML=uniq(prestamos().map(x=>x.persona)).map(v=>`<option value="${esc(v)}">`).join('');
+  document.getElementById('psEntregas').innerHTML=uniq(prestamos().flatMap(x=>[x.entrega,x.recoge])).map(v=>`<option value="${esc(v)}">`).join('');
+  const v=(k,d)=>p&&p[k]!=null?p[k]:(d||'');
+  document.getElementById('psObjetos').value=v('objetos');
+  document.getElementById('psPersona').value=v('persona');
+  document.getElementById('psFecha').value=v('fecha',hoyYMD());
+  document.getElementById('psTel').value=v('telefono');
+  document.getElementById('psDni').value=v('dni');
+  document.getElementById('psPrevista').value=v('prevista');
+  document.getElementById('psEntrega').value=v('entrega');
+  document.getElementById('psNotas').value=v('notas');
+  showModal('presModal');
+  if(!firmaPs) firmaPs=crearFirma('psFirmaBox');
+  setTimeout(()=>{ firmaPs.preparar(); document.getElementById('psFirmaInfo').textContent=(p&&p.firma)?'Ya está firmado. Si firmas de nuevo, se sustituye la firma.':''; },60);
+}
+function openDevolucion(id){
+  const p=prestamos().find(x=>x.id===id); if(!p) return;
+  presDevId=id;
+  document.getElementById('devTitulo').textContent='✅ Devolución · '+(p.numero||'');
+  document.getElementById('devResumen').innerHTML=`${esc(presObjetos(p).join(' · '))} — prestado a <b>${esc(p.persona||'')}</b> el ${fmtFecha(p.fecha)}`;
+  document.getElementById('dvFecha').value=hoyYMD();
+  document.getElementById('dvEstado').value='Bien';
+  document.getElementById('dvRecoge').value='';
+  document.getElementById('dvNota').value='';
+  showModal('devModal');
+  if(!firmaDv) firmaDv=crearFirma('dvFirmaBox');
+  setTimeout(()=>firmaDv.preparar(),60);
+}
+function deshacerDevolucion(id){
+  const p=prestamos().find(x=>x.id===id); if(!p) return;
+  if(!confirm(`¿Volver a poner «${presObjetos(p).join(', ')}» como prestado a ${p.persona}? (se borra la fecha de devolución)`)) return;
+  Object.assign(p,{estado:'prestado',devolucion:'',devEstado:'',devNota:'',recoge:'',firmaDev:''});
+  save(); renderPrestamos();
+}
+function delPrestamo(id){
+  const p=prestamos().find(x=>x.id===id); if(!p) return;
+  if(!confirm(`¿Enviar a la papelera el préstamo ${p.numero||''} (${presObjetos(p).join(', ')} a ${p.persona})?`)) return;
+  db.prestamos=db.prestamos.filter(x=>x.id!==id);
+  papeleraPush('prestamo', (p.numero||'')+' · '+presObjetos(p).join(', ')+' · '+(p.persona||''), p);
+  save(); renderPrestamos();
+}
+/* Documento formal de la Comisión de Fiestas de Josa */
+function verDocPrestamo(id){
+  const p=prestamos().find(x=>x.id===id); if(!p) return;
+  const dev=p.estado==='devuelto';
+  const fLarga=f=>{ if(!f) return '—'; const d=new Date(f+'T12:00:00'); return d.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); };
+  const filasObj=presObjetos(p).map(o=>`<tr><td>${esc(o)}</td></tr>`).join('')||'<tr><td>—</td></tr>';
+  document.getElementById('docPresHoja').innerHTML=`<div class="hoja">
+    <div class="cab"><div class="org">🎉 Comisión de Fiestas de Josa<small>Josa (Teruel)</small></div><div class="num">Documento nº<b>${esc(p.numero||'')}</b>${fLarga(p.fecha)}</div></div>
+    <h1>Justificante de préstamo de material</h1>
+    <p>La <b>Comisión de Fiestas de Josa</b> hace constar que, en la fecha indicada, entrega en préstamo el material que se detalla a continuación a la persona que firma este documento.</p>
+    <table>
+      <tr><th>Persona que lo recibe</th><td><b>${esc(p.persona||'')}</b></td></tr>
+      ${p.dni?`<tr><th>DNI</th><td>${esc(p.dni)}</td></tr>`:''}
+      ${p.telefono?`<tr><th>Teléfono</th><td>${esc(p.telefono)}</td></tr>`:''}
+      <tr><th>Fecha del préstamo</th><td>${fLarga(p.fecha)}</td></tr>
+      ${p.prevista?`<tr><th>Fecha prevista de devolución</th><td>${fLarga(p.prevista)}</td></tr>`:''}
+      ${p.entrega?`<tr><th>Entregado por (Comisión)</th><td>${esc(p.entrega)}</td></tr>`:''}
+      ${p.notas?`<tr><th>Observaciones</th><td>${esc(p.notas)}</td></tr>`:''}
+    </table>
+    <table><tr><th style="width:auto">Material prestado</th></tr>${filasObj}</table>
+    <p>La persona que recibe el material se compromete a <b>cuidarlo</b>, a darle un uso adecuado y a <b>devolverlo a la Comisión de Fiestas en el mismo estado</b> en que lo recibe${p.prevista?', como muy tarde en la fecha prevista':''}. En caso de pérdida o deterioro, se compromete a reponerlo o a abonar su valor.</p>
+    <div class="firmas">
+      <div class="firma"><div class="img">${p.firma?`<img src="${p.firma}" alt="Firma">`:''}</div>Firma de quien recibe el material<br><b>${esc(p.persona||'')}</b></div>
+      <div class="firma"><div class="img"><span class="sello ${dev?'':'p'}">COMISIÓN DE FIESTAS · JOSA</span></div>Por la Comisión de Fiestas<br><b>${esc(p.entrega||'')}</b></div>
+    </div>
+    <h1 style="margin-top:30px;font-size:16px">Devolución</h1>
+    ${dev?`<table>
+      <tr><th>Estado</th><td><span class="sello" style="transform:none;padding:2px 10px">DEVUELTO</span></td></tr>
+      <tr><th>Fecha de devolución</th><td><b>${fLarga(p.devolucion)}</b></td></tr>
+      <tr><th>Estado del material</th><td>${esc(p.devEstado||'Bien')}${p.devNota?' — '+esc(p.devNota):''}</td></tr>
+      ${p.recoge?`<tr><th>Recogido por (Comisión)</th><td>${esc(p.recoge)}</td></tr>`:''}
+    </table>
+    ${p.firmaDev?`<div class="firmas"><div class="firma"><div class="img"><img src="${p.firmaDev}" alt="Firma devolución"></div>Firma de quien devuelve el material<br><b>${esc(p.persona||'')}</b></div><div></div></div>`:''}`
+    :`<p><span class="sello p" style="transform:none">PENDIENTE DE DEVOLVER</span></p><p style="color:#666;font-size:13px">Cuando se devuelva el material, la Comisión lo anotará en este mismo documento.</p>`}
+    <div class="pie">Documento generado por la Comisión de Fiestas de Josa · ${esc(p.numero||'')} · ${new Date().toLocaleDateString('es-ES')}</div>
+  </div>`;
+  document.getElementById('docPres').classList.add('show');
+  document.getElementById('docPres').scrollTop=0;
+}
+function cerrarDocPres(){ document.getElementById('docPres').classList.remove('show'); }
+function imprimirDocPres(){ document.body.classList.add('imprimiendo'); setTimeout(()=>{ window.print(); setTimeout(()=>document.body.classList.remove('imprimiendo'),500); },50); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('docPres').classList.contains('show')) cerrarDocPres(); });
 
 /* ============ CONTACTOS ============ */
 let ctEditId=null, ctSearch='';
@@ -2456,6 +2711,30 @@ document.getElementById('catOptions').addEventListener('click',e=>{
 document.addEventListener('click',e=>{ if(!e.target.closest('#catPop') && !e.target.closest('#catBtn')) closeCatPop(); });
 
 document.getElementById('mReciboFile').onchange=function(){ handleReciboFile(this); };
+
+/* Guardar préstamo */
+document.getElementById('psGuardar').onclick=()=>{
+  const g=id=>document.getElementById(id).value.trim();
+  if(!g('psObjetos')){ alert('Escribe qué se presta.'); return; }
+  if(!g('psPersona')){ alert('Escribe a quién se le presta.'); return; }
+  const prev=presEditId?prestamos().find(x=>x.id===presEditId):null;
+  const firmaNueva=firmaPs&&!firmaPs.vacia()?firmaPs.png():'';
+  if(!firmaNueva && !(prev&&prev.firma) && !confirm('No ha firmado nadie. ¿Guardar el préstamo sin firma? (se puede firmar después editándolo)')) return;
+  const data={objetos:document.getElementById('psObjetos').value.split('\n').map(x=>x.trim()).filter(Boolean).join('\n'), persona:g('psPersona'), fecha:g('psFecha')||hoyYMD(), telefono:g('psTel'), dni:g('psDni'), prevista:g('psPrevista'), entrega:g('psEntrega'), notas:g('psNotas'), mod:new Date().toISOString()};
+  if(firmaNueva){ data.firma=firmaNueva; data.firmadoEl=new Date().toISOString(); }
+  let id=presEditId;
+  if(prev){ Object.assign(prev,data); }
+  else { id=uid(); db.prestamos.push(Object.assign({id, numero:presNumero(data.fecha), estado:'prestado', comisionId:(activa()||{}).id||'', creado:new Date().toISOString()}, data)); }
+  save(); closeModal('presModal'); presFiltro=prev?presFiltro:'prestado'; renderPrestamos();
+  if(!prev && confirm('Préstamo guardado. ¿Quieres ver el documento para imprimirlo o guardarlo en PDF?')) verDocPrestamo(id);
+};
+/* Guardar devolución */
+document.getElementById('dvGuardar').onclick=()=>{
+  const p=prestamos().find(x=>x.id===presDevId); if(!p) return;
+  const firma=firmaDv&&!firmaDv.vacia()?firmaDv.png():'';
+  Object.assign(p,{estado:'devuelto', devolucion:document.getElementById('dvFecha').value||hoyYMD(), devEstado:document.getElementById('dvEstado').value, devNota:document.getElementById('dvNota').value.trim(), recoge:document.getElementById('dvRecoge').value.trim(), firmaDev:firma||p.firmaDev||'', mod:new Date().toISOString()});
+  save(); closeModal('devModal'); renderPrestamos();
+};
 
 /* Guardar premio */
 document.getElementById('prGuardar').onclick=()=>{
