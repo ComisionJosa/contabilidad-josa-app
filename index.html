@@ -41,7 +41,7 @@
   button.ghost{background:transparent}
   button:disabled{opacity:.4;cursor:not-allowed}
   nav{display:flex;gap:6px;padding:10px 22px 0;flex-wrap:wrap;position:sticky;top:var(--hdr,62px);z-index:19;background:#0d141d;border-bottom:1px solid var(--line)}
-  nav button{background:transparent;border:1px solid transparent;border-bottom:none;border-radius:10px 10px 0 0;color:var(--muted);padding:10px 18px}
+  nav button{background:transparent;border:1px solid transparent;border-bottom:none;border-radius:10px 10px 0 0;color:var(--muted);padding:10px 12px}
   nav button.active{background:var(--panel);color:var(--txt);border-color:var(--line)}
   main{padding:22px;max-width:1200px;margin:0 auto}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
@@ -181,8 +181,8 @@
   main{padding:28px 26px 60px}
   header{padding:16px 24px}
   header h1{font-size:20px}
-  nav{gap:8px;padding:12px 24px 0}
-  nav button{padding:11px 20px;font-size:14.5px}
+  nav{gap:4px;padding:12px 24px 0}
+  nav button{padding:11px 13px;font-size:14.5px}
   .grid{gap:20px}
   .card{padding:22px;border-radius:16px}
   .card:hover{border-color:#33465b}
@@ -278,6 +278,7 @@
   body.solo-lectura .adj-no{display:none !important}
   body.solo-lectura #btnAjustes{display:none !important}
   body.solo-lectura [onclick*="openTarea"], body.solo-lectura [onclick*="delTarea"]{display:none !important}
+  body.solo-lectura [onclick*="openListado"], body.solo-lectura [onclick*="delListado"], body.solo-lectura [onclick*="openApuntado"], body.solo-lectura [onclick*="delApuntado"], body.solo-lectura [onclick*="lsPegar"], body.solo-lectura [onclick*="lsIngreso"], body.solo-lectura .ls-add, body.solo-lectura .ls-met-w{display:none !important}
   body.sin-conectar header button, body.sin-conectar header .comi-pick{display:none !important}
   body.solo-lectura header [onclick*="guia.html"]{display:none !important}
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
@@ -287,6 +288,38 @@
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  /* ---- Listados (comidas y cenas) ---- */
+  .ls-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+  .ls-kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .ls-kpi .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+  .ls-kpi .v{font-size:21px;font-weight:800;margin-top:2px} .ls-kpi .s{font-size:12px;color:var(--muted)}
+  .ls-prog{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-top:6px} .ls-prog span{display:block;height:100%;background:var(--green);border-radius:99px}
+  .ls-add{display:flex;gap:8px;flex-wrap:wrap;align-items:end;background:var(--panel);border:1px dashed var(--acc);border-radius:12px;padding:10px 12px;margin:10px 0}
+  .ls-add label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
+  .ls-add .nom{flex:1 1 240px} .ls-add .nom input{width:100%} .ls-add input[type=number]{width:74px}
+  .ls-met{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden} .ls-met button{border:0;border-radius:0;padding:7px 12px;background:var(--panel2)}
+  .ls-met button.on{background:var(--acc);color:#1a1205;font-weight:700}
+  .ls-row{display:grid;grid-template-columns:minmax(180px,1fr) auto 128px auto;gap:6px 14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:6px}
+  .ls-row.pagado{box-shadow:inset 4px 0 0 var(--green);opacity:.75} .ls-row.pagado .ls-nom b{text-decoration:line-through}
+  .ls-row.parcial{box-shadow:inset 4px 0 0 var(--acc)}
+  .ls-nom b{font-size:15px} .ls-nom .meta{font-size:12px;color:var(--muted);margin-top:1px}
+  .ls-mas{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:0 8px;font-size:12.5px;font-weight:700;margin-left:4px}
+  .ls-dots{display:flex;flex-wrap:wrap;gap:5px;max-width:330px}
+  .ls-dot{width:30px;height:30px;border-radius:50%;border:2px solid #5d7189;background:transparent;padding:0;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .ls-dot.nino{width:26px;height:26px;border-style:dashed;font-size:11px}
+  .ls-dot.on{background:var(--green);border-color:var(--green);border-style:solid;color:#062012}
+  .ls-dot:disabled{cursor:default}
+  .ls-imp{text-align:right;white-space:nowrap} .ls-imp b{font-size:15px} .ls-imp small{display:block;font-size:11.5px;color:var(--muted)}
+  .ls-imp .ok{color:var(--green);font-weight:800}
+  .ls-acc{display:flex;gap:4px;justify-content:flex-end}
+  .ls-head{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .ls-head h3{margin:0;font-size:18px} .ls-head .muted{font-size:13px}
+  @media(max-width:760px){
+    .ls-kpis{grid-template-columns:1fr 1fr}
+    .ls-row{grid-template-columns:1fr auto} .ls-dots{grid-column:1/-1;order:3} .ls-acc{grid-column:1/-1;order:4}
+    .ls-acc .ls-todo{flex:1}
+    .ls-add .nom{flex-basis:100%}
+  }
   /* ---- Tareas ---- */
   .tar-grupo{display:flex;align-items:center;gap:10px;margin:18px 0 8px;font-weight:800;font-size:13.5px;letter-spacing:.4px;text-transform:uppercase}
   .tar-grupo .n{font-weight:600;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
@@ -438,6 +471,7 @@
   <button data-tab="stock">📦 Stock</button>
   <button data-tab="notas">📝 Anotaciones</button>
   <button data-tab="tareas">✅ Tareas</button>
+  <button data-tab="listados">📋 Listados</button>
   <button data-tab="premios">🏆 Concursos</button>
   <button data-tab="prestamos">🤝 Préstamos</button>
   <button data-tab="contactos">📇 Contactos</button>
@@ -616,6 +650,51 @@
   <div class="modal-actions"><button class="ghost" onclick="closeModal('tareaModal')">Cancelar</button><button class="primary" id="taGuardar">Guardar</button></div>
 </div></div>
 
+<!-- MODAL LISTADO -->
+<div class="modal-bg" id="listadoModal"><div class="modal" style="max-width:600px">
+  <h3 id="listadoTitulo">Nuevo listado</h3>
+  <div class="field"><label>Nombre</label><input type="text" id="lsNomL" placeholder="Ej: Comida de Halloween"></div>
+  <div class="field two">
+    <div><label>Día de la comida / cena</label><input type="date" id="lsFechaL"></div>
+    <div><label>Fiesta</label><select id="lsFiestaL"></select></div>
+  </div>
+  <div class="field two">
+    <div><label>Precio por persona (€)</label><input type="number" id="lsPrecioL" min="0" step="0.5" placeholder="Ej: 15"></div>
+    <div><label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="lsConNinosL"> Los niños pagan otro precio</label><input type="number" id="lsPrecioNinoL" min="0" step="0.5" placeholder="Precio niño (0 = gratis)"></div>
+  </div>
+  <div class="field"><label>Nota (opcional)</label><textarea id="lsNotaL" rows="2" placeholder="Menú, hora, dónde se cobra…"></textarea></div>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('listadoModal')">Cancelar</button><button class="primary" id="lsGuardarL">Guardar</button></div>
+</div></div>
+
+<!-- MODAL APUNTADO (editar un grupo del listado) -->
+<div class="modal-bg" id="apuntadoModal"><div class="modal" style="max-width:560px">
+  <h3>✏️ Editar apuntado</h3>
+  <div class="field"><label>Nombre</label><input type="text" id="apNombre"></div>
+  <div class="field two">
+    <div><label id="apAdLbl">Adultos (contando a la persona)</label><input type="number" id="apAd" min="0" step="1"></div>
+    <div id="apNiW"><label>Niños</label><input type="number" id="apNi" min="0" step="1"></div>
+  </div>
+  <div class="field two">
+    <div><label>Se apuntó por</label><select id="apVia"></select></div>
+    <div><label>Pagó por</label><select id="apMetodo"><option>Efectivo</option><option>Bizum</option><option>Banco</option></select></div>
+  </div>
+  <div class="field two">
+    <div><label>Adultos que ya han pagado</label><input type="number" id="apPagA" min="0" step="1"></div>
+    <div id="apPagNW"><label>Niños que ya han pagado</label><input type="number" id="apPagN" min="0" step="1"></div>
+  </div>
+  <div class="field"><label>Nota (opcional)</label><input type="text" id="apNota" placeholder="Ej: uno es celíaco, vienen a las 15:00…"></div>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('apuntadoModal')">Cancelar</button><button class="primary" id="apGuardar">Guardar</button></div>
+</div></div>
+
+<!-- MODAL PEGAR LISTA -->
+<div class="modal-bg" id="lsPegarModal"><div class="modal" style="max-width:600px">
+  <h3>📥 Pegar varios nombres</h3>
+  <p class="muted" style="margin-top:-4px">Uno por línea. Pon <b>+ 4</b> para los acompañantes y <b>+ 2 niños</b> para los niños. Sirve para copiar la lista del bar, de WhatsApp o de Instagram.</p>
+  <div class="field"><textarea id="lsPegarTxt" rows="9" placeholder="Javi León + 4&#10;María Pérez&#10;Familia Royo + 2 + 2 niños"></textarea></div>
+  <div class="field two"><div><label>Se apuntaron por</label><select id="lsPegarVia"></select></div><div class="muted" id="lsPegarInfo" style="align-self:end;padding-bottom:9px"></div></div>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('lsPegarModal')">Cancelar</button><button class="primary" id="lsPegarOk">Añadir</button></div>
+</div></div>
+
 <!-- MODAL PRÉSTAMO -->
 <div class="modal-bg" id="presModal"><div class="modal" style="max-width:680px">
   <h3 id="presTitulo">Nuevo préstamo</h3>
@@ -777,6 +856,7 @@ function normaliza(d){
   d.premios = Array.isArray(d.premios)?d.premios:[];
   d.prestamos = Array.isArray(d.prestamos)?d.prestamos:[];
   d.tareas = Array.isArray(d.tareas)?d.tareas:[];
+  d.listados = Array.isArray(d.listados)?d.listados:[];
   d.stockCats = Array.isArray(d.stockCats)?d.stockCats:[];
   // stock ahora es POR COMISIÓN
   d.comisiones.forEach(c=>{ if(!Array.isArray(c.stock)) c.stock=[]; });
@@ -1192,7 +1272,7 @@ function render(){
   document.getElementById('nav').style.display=state.tab==='ajustes'?'none':'';
   medirBarras();
   if(!activa()){content.innerHTML='<div class="empty">No hay comisiones. Créala en la pestaña Comisiones.</div>';return;}
-  ({resumen:renderResumen,movs:renderMovs,panel:renderPanel,contactos:renderContactos,notas:renderNotas,premios:renderPremios,prestamos:renderPrestamos,tareas:renderTareas,stock:renderStock,comisiones:renderComisiones,ajustes:renderAjustes}[state.tab])();
+  ({resumen:renderResumen,movs:renderMovs,panel:renderPanel,contactos:renderContactos,notas:renderNotas,premios:renderPremios,prestamos:renderPrestamos,tareas:renderTareas,listados:renderListados,stock:renderStock,comisiones:renderComisiones,ajustes:renderAjustes}[state.tab])();
   if(state.tab==='ajustes') content.insertAdjacentHTML('afterbegin',`<div class="section-title" style="border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px"><h2>⚙️ Copias y datos</h2><button class="primary" onclick="cerrarAjustes()" title="Volver al programa (Esc)">✕ Cerrar</button></div>`);
 }
 function renderComiSelect(){
@@ -1655,7 +1735,7 @@ async function cargarInfoCarpeta(){
 /* ============ MOVIMIENTO ============ */
 function openMov(id){
   if(esCerrada()){alert('🔒 Esta comisión está cerrada (solo lectura).');return;}
-  state.editMovId=id||null;const c=activa();
+  state.editMovId=id||null;state.lsLink=null;const c=activa();
   const acts=fiestasOrden(c).filter(f=>f.activa);
   document.getElementById('mFiesta').innerHTML=acts.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('')||'<option value="">(no hay fiestas activas)</option>';
   if(id){const m=db.movimientos.find(x=>x.id===id);document.getElementById('movModalTitle').textContent='Editar movimiento';setTipo(m.tipo);
@@ -1748,7 +1828,7 @@ document.getElementById('mGuardar').onclick=()=>{
     data.pagos=partes;
   } else data.pagos=undefined;
   if(state.editMovId){const t=db.movimientos.find(x=>x.id===state.editMovId);Object.assign(t,data);delete t.recibo;if(!t.pagos)delete t.pagos;}
-  else{db.movimientos.push({id:uid(),...data});}
+  else{const nm={id:uid(),...data}; if(state.lsLink) nm.listadoId=state.lsLink; db.movimientos.push(nm);}
   if(save()){closeModal('movModal');render();}
 };
 
@@ -1985,8 +2065,8 @@ function delMov(id){
   save(); render();
 }
 /* ============ PAPELERA (unificada: movimientos, contactos, categorías, comisiones) ============ */
-const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝',tarea:'✅'};
-const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo',tarea:'Tarea'};
+const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝',tarea:'✅',listado:'📋',apuntado:'🙋'};
+const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo',tarea:'Tarea',listado:'Listado de comida/cena',apuntado:'Apuntado a un listado'};
 function papeleraPush(tipo,titulo,payload){ db.papelera.push({id:uid(),tipo,titulo:titulo||'',deletedAt:new Date().toISOString(),payload}); }
 function fmtFechaHora(iso){ if(!iso)return ''; const s=String(iso); const d=s.slice(0,10).split('-'); return (d.length===3?`${d[2]}/${d[1]}/${d[0]}`:s.slice(0,10))+' '+s.slice(11,16); }
 function openPapelera(){ paintPapelera(); showModal('papeleraModal'); }
@@ -2013,6 +2093,8 @@ function restaurarItem(pid){
   else if(it.tipo==='premio'){ db.premios.push(it.payload); }
   else if(it.tipo==='prestamo'){ db.prestamos.push(it.payload); }
   else if(it.tipo==='tarea'){ db.tareas.push(it.payload); }
+  else if(it.tipo==='listado'){ db.listados.push(it.payload); }
+  else if(it.tipo==='apuntado'){ const p=it.payload||{}; const l=db.listados.find(x=>x.id===p.listadoId); if(!l){ alert('No se puede restaurar: el listado de esta persona ya no existe.'); return; } if(!Array.isArray(l.gente))l.gente=[]; l.gente.push(p.g); }
   else if(it.tipo==='categoria'){ const nm=it.payload.nombre; if(catNames().some(c=>normName(c)===normName(nm))){ alert('Ya existe una categoría "'+nm+'". No se restaura para no duplicar.'); return; } db.categorias.push(it.payload); }
   else if(it.tipo==='comision'){ const p=it.payload; if(db.comisiones.some(c=>c.id===p.comision.id)){ alert('Esa comisión ya existe.'); return; } db.comisiones.push(p.comision); (p.movimientos||[]).forEach(m=>db.movimientos.push(m)); }
   else if(it.tipo==='adjunto'){ const p=it.payload||{}; const m=db.movimientos.find(x=>x.id===p.movId); if(!m){ alert('No se puede restaurar: el movimiento de este documento ya no existe.'); return; } m.recibos=adjuntosDe(m).concat([p.adj]); delete m.recibo; }
@@ -2339,6 +2421,250 @@ function heredarTareas(nueva){
     db.tareas.push({id:uid(),comisionId:nueva.id,fiestaId:mapF[t.fiestaId]||'',titulo:t.titulo,fecha:f,responsable:'',nota:t.nota||'',repite:true,hecha:false,creado:new Date().toISOString()}); n++;
   });
   return n;
+}
+
+/* ============ LISTADOS (gente apuntada a comidas y cenas, y cobro en la plaza) ============ */
+let lsSel='', lsSearch='', lsFiltro='', lsMetodo='Efectivo', lsVia='bar', lsEditId=null, lsApEditId=null;
+const LS_VIAS={bar:'🍺 Lista del bar',whatsapp:'💬 WhatsApp',instagram:'📸 Instagram',correo:'✉️ Correo',persona:'🗣️ En persona',otro:'• Otro'};
+function listadosDe(cid){ return (db.listados||[]).filter(l=>l.comisionId===cid); }
+function lsPrecio(l,t){ const v=parseFloat(t==='N'?l.precioNino:l.precio); return isNaN(v)?0:v; }
+function lsGrupo(l,g){ return {A:Math.max(0,Math.floor(+g.adultos||0)), N:l.conNinos?Math.max(0,Math.floor(+g.ninos||0)):0}; }
+function lsPag(l,g){ const x=lsGrupo(l,g); return {A:Math.min(Math.max(0,+g.pagA||0),x.A), N:Math.min(Math.max(0,+g.pagN||0),x.N)}; }
+function lsDebe(l,g){ const x=lsGrupo(l,g); return x.A*lsPrecio(l,'A')+x.N*lsPrecio(l,'N'); }
+function lsPagado(l,g){ const p=lsPag(l,g); return p.A*lsPrecio(l,'A')+p.N*lsPrecio(l,'N'); }
+function lsTot(l){
+  const t={grupos:0,A:0,N:0,pagA:0,pagN:0,total:0,cobrado:0,porMetodo:{},gPag:0,gMed:0,gNo:0};
+  (l.gente||[]).forEach(g=>{ const x=lsGrupo(l,g), p=lsPag(l,g); t.grupos++; t.A+=x.A; t.N+=x.N; t.pagA+=p.A; t.pagN+=p.N; t.total+=lsDebe(l,g);
+    const c=lsPagado(l,g); t.cobrado+=c; if(c>0){ const m=g.metodo||'Efectivo'; t.porMetodo[m]=(t.porMetodo[m]||0)+c; }
+    const per=x.A+x.N, pp=p.A+p.N; if(per>0&&pp>=per) t.gPag++; else if(pp>0) t.gMed++; else t.gNo++; });
+  t.personas=t.A+t.N; t.pagados=t.pagA+t.pagN;
+  t.pasado=db.movimientos.filter(m=>m.listadoId===l.id).reduce((s,m)=>s+(+m.importe||0),0);
+  return t;
+}
+/* «Javi León + 4» → 5 adultos · «Familia Royo + 2 + 2 niños» → 3 adultos y 2 niños */
+function lsParse(txt){
+  let A=1,N=0,hay=false;
+  const nombre=String(txt||'').replace(/\+\s*(\d+)\s*([a-zA-ZñÑáéíóúÁÉÍÓÚ]+)?/g,(m,n,k)=>{ hay=true; if(k&&/^(ni[ñn]|cr[ií]|peque|chaval|crio)/i.test(k)) N+=+n; else A+=+n; return ' '; }).replace(/\s{2,}/g,' ').trim();
+  return {nombre,A,N,hay};
+}
+function lsActual(c){
+  const ls=listadosDe(c.id); if(!ls.length) return null;
+  let l=ls.find(x=>x.id===lsSel);
+  if(!l){ const h=hoyYMD(); l=ls.filter(x=>x.fecha&&x.fecha>=h).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0]||ls[ls.length-1]; lsSel=l.id; }
+  return l;
+}
+function renderListados(){
+  const c=activa(); if(!c){ content.innerHTML='<div class="empty">No hay comisiones.</div>'; return; }
+  const ro=soloLectura||!!c.cerrada;
+  const fiestas=fiestasOrden(c);
+  const fNom=fid=>{ const f=fiestas.find(x=>x.id===fid); return f?(EMO[f.tipo]||'🎪')+' '+f.nombre:''; };
+  const ls=listadosDe(c.id).slice().sort((a,b)=>(a.fecha||'9999').localeCompare(b.fecha||'9999'));
+  let html=`<div class="section-title"><h2>📋 Listados</h2>${ro?'':'<button class="primary" onclick="openListado()">+ Nuevo listado</button>'}</div>
+  <p class="muted" style="margin:-6px 0 12px">La gente que se apunta a cada comida o cena (por la lista del bar, WhatsApp, Instagram, correo…) y quién ha pagado. Comisión <b>${esc(c.nombre)}</b>.</p>`;
+  if(!ls.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ningún listado.<br>Crea uno por cada comida o cena (p. ej. «Comida de Halloween») y ve apuntando a la gente.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openListado()">+ Nuevo listado</button>'}</div>`; return; }
+  const l=lsActual(c), t=lsTot(l);
+  html+=`<div class="nt-chips" style="margin-bottom:10px">${ls.map(x=>{ const tt=lsTot(x); return `<button class="${x.id===l.id?'on':''}" onclick="lsSel='${x.id}';lsSearch='';lsFiltro='';renderListados()">${esc((EMO[(fiestas.find(f=>f.id===x.fiestaId)||{}).tipo]||'📋')+' '+x.nombre)} · ${tt.personas}</button>`; }).join('')}</div>`;
+  const precioTxt=money(lsPrecio(l,'A'))+' por persona'+(l.conNinos?' · niños '+(lsPrecio(l,'N')?money(lsPrecio(l,'N')):'gratis'):'');
+  html+=`<div class="ls-head"><div style="flex:1 1 260px"><h3>${esc(l.nombre)}</h3>
+      <div class="muted">${l.fecha?'📅 '+fmtFecha(l.fecha)+(diasHasta(l.fecha)>=0?' ('+cuandoTxt(l.fecha)+')':'')+' · ':''}${esc(fNom(l.fiestaId)||'Sin fiesta')} · 💶 ${precioTxt}</div>
+      ${l.nota?`<div class="muted" style="margin-top:3px;white-space:pre-wrap">${esc(l.nota)}</div>`:''}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="ghost" id="btnLsPdf" onclick="lsPdf()" title="Lista en PDF para llevar a la plaza">📄 PDF para la plaza</button>
+      ${ro?'':`<button class="ghost" onclick="lsPegar()">📥 Pegar lista</button><button class="ghost" onclick="lsIngreso()" title="Apuntar lo cobrado como ingreso en Movimientos">💶 Pasar a ingresos</button><button class="icon-btn ghost" onclick="openListado('${l.id}')" title="Editar listado">✏️</button><button class="icon-btn danger" onclick="delListado('${l.id}')" title="Borrar listado">🗑️</button>`}
+    </div></div>`;
+  const pct=t.personas?Math.round(100*t.pagados/t.personas):0;
+  const met=Object.entries(t.porMetodo).map(([m,v])=>m+' '+money(v)).join(' · ');
+  html+=`<div class="ls-kpis">
+    <div class="ls-kpi"><div class="l">🙋 Apuntados</div><div class="v">${t.personas} personas</div><div class="s">${l.conNinos?t.A+' adultos · '+t.N+' niños · ':''}${t.grupos} ${t.grupos===1?'apunte':'apuntes'}</div></div>
+    <div class="ls-kpi"><div class="l">✅ Han pagado</div><div class="v">${t.pagados} de ${t.personas}</div><div class="ls-prog"><span style="width:${pct}%"></span></div></div>
+    <div class="ls-kpi"><div class="l">💶 Cobrado</div><div class="v" style="color:var(--green)">${money(t.cobrado)}</div><div class="s">${met||'—'}${t.pasado?' · '+money(t.pasado)+' ya en Movimientos':''}</div></div>
+    <div class="ls-kpi"><div class="l">⏳ Falta por cobrar</div><div class="v" style="color:${t.total-t.cobrado>0?'#ffc76b':'var(--green)'}">${money(t.total-t.cobrado)}</div><div class="s">de ${money(t.total)} en total</div></div>
+  </div>`;
+  if(!ro){
+    html+=`<div class="ls-add">
+      <div class="nom"><label>Nombre (puedes escribir «Javi León + 4»)</label><input type="text" id="lsNombre" placeholder="Nombre y apellido…" autocomplete="off"></div>
+      <div><label>${l.conNinos?'Adultos':'Personas'}</label><input type="number" id="lsAd" min="0" step="1" value="1"></div>
+      ${l.conNinos?'<div><label>Niños</label><input type="number" id="lsNi" min="0" step="1" value="0"></div>':''}
+      <div><label>Se apunta por</label><select id="lsVia">${Object.entries(LS_VIAS).map(([k,v])=>`<option value="${k}" ${lsVia===k?'selected':''}>${v}</option>`).join('')}</select></div>
+      <button class="primary" onclick="lsAdd()">➕ Apuntar</button>
+    </div>`;
+  }
+  const q=normName(lsSearch);
+  const estado=g=>{ const x=lsGrupo(l,g), p=lsPag(l,g), per=x.A+x.N, pp=p.A+p.N; return per>0&&pp>=per?'pag':(pp>0?'med':'no'); };
+  const lista=(l.gente||[]).filter(g=>(!q||normName([g.nombre,g.nota].join(' ')).includes(q)) && (!lsFiltro||estado(g)===lsFiltro))
+    .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
+  const chips=[['','Todos',t.grupos],['no','⏳ Sin pagar',t.gNo],['med','½ A medias',t.gMed],['pag','✅ Pagados',t.gPag]];
+  html+=`<div class="toolbar" style="margin-top:6px"><input type="text" id="lsBuscar" placeholder="🔎 Buscar nombre…" value="${esc(lsSearch)}" style="min-width:200px;flex:1 1 200px">
+    <div class="nt-chips">${chips.map(([k,tx,n])=>`<button class="${lsFiltro===k?'on':''}" onclick="lsFiltro='${k}';renderListados()">${tx} (${n})</button>`).join('')}</div>
+    ${ro?'':`<span class="ls-met-w" style="display:flex;gap:6px;align-items:center;font-size:13px">Cobrando en: <span class="ls-met">${['Efectivo','Bizum'].map(m=>`<button class="${lsMetodo===m?'on':''}" onclick="lsMetodo='${m}';renderListados()">${m==='Efectivo'?'💵':'📱'} ${m}</button>`).join('')}</span></span>`}
+  </div>`;
+  const fila=g=>{
+    const x=lsGrupo(l,g), p=lsPag(l,g), est=estado(g), per=x.A+x.N, debe=lsDebe(l,g), pagado=lsPagado(l,g);
+    let dots='';
+    for(let i=0;i<x.A;i++) dots+=`<button class="ls-dot ${i<p.A?'on':''}" ${ro?'disabled':`onclick="lsDot('${g.id}','A',${i})"`} title="Adulto ${i+1}${i<p.A?' · pagado':''}">${i<p.A?'✓':i+1}</button>`;
+    for(let i=0;i<x.N;i++) dots+=`<button class="ls-dot nino ${i<p.N?'on':''}" ${ro?'disabled':`onclick="lsDot('${g.id}','N',${i})"`} title="Niño ${i+1}${i<p.N?' · pagado':''}">${i<p.N?'✓':'N'}</button>`;
+    const imp=est==='pag'?`<span class="ok">✅ Pagado</span><small>${money(pagado)} · ${esc(g.metodo||'Efectivo')}</small>`
+      :`<b>${money(debe-pagado)}</b><small>${est==='med'?'falta · ya pagó '+money(pagado):'a pagar'}</small>`;
+    return `<div class="ls-row ${est==='pag'?'pagado':(est==='med'?'parcial':'')}">
+      <div class="ls-nom"><b>${esc(g.nombre||'(sin nombre)')}</b>${per>1?`<span class="ls-mas">+${per-1}</span>`:''}
+        <div class="meta">${l.conNinos?x.A+' adulto'+(x.A===1?'':'s')+' · '+x.N+' niño'+(x.N===1?'':'s'):x.A+' persona'+(x.A===1?'':'s')} · ${LS_VIAS[g.via]||''}${g.nota?' · '+esc(g.nota):''}</div></div>
+      <div class="ls-dots">${dots}</div>
+      <div class="ls-imp">${imp}</div>
+      <div class="ls-acc">${ro?'':`<button class="${est==='pag'?'ghost':'primary'} ls-todo" onclick="lsTodo('${g.id}')">${est==='pag'?'↩️ Deshacer':'💶 Cobrar todo'}</button><button class="icon-btn ghost" onclick="openApuntado('${g.id}')" title="Editar">✏️</button><button class="icon-btn danger" onclick="delApuntado('${g.id}')" title="Borrar">🗑️</button>`}</div>
+    </div>`;
+  };
+  html+=lista.length?lista.map(fila).join(''):`<div class="card empty">${(l.gente||[]).length?'Nadie con este filtro.':'Todavía no hay nadie apuntado.'+(ro?'':' Escribe el nombre arriba y pulsa ➕ Apuntar (o Intro).')}</div>`;
+  content.innerHTML=html;
+  const b=document.getElementById('lsBuscar'); b.oninput=e=>{ lsSearch=e.target.value; renderListados(); focusEnd('lsBuscar'); };
+  const n=document.getElementById('lsNombre');
+  if(n){
+    n.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); lsAdd(); } };
+    n.oninput=()=>{ const p=lsParse(n.value); if(p.hay){ const ni=document.getElementById('lsNi'); document.getElementById('lsAd').value=ni?p.A:p.A+p.N; if(ni) ni.value=p.N; } };
+    document.getElementById('lsVia').onchange=e=>{ lsVia=e.target.value; };
+  }
+}
+function lsListado(){ const c=activa(); return c?lsActual(c):null; }
+function lsAdd(){
+  const l=lsListado(); if(!l||soloLectura) return;
+  const n=document.getElementById('lsNombre'), p=lsParse(n.value);
+  if(!p.nombre){ alert('Escribe el nombre.'); n.focus(); return; }
+  const A=Math.max(0,parseInt(document.getElementById('lsAd').value)||0), ni=document.getElementById('lsNi'), N=ni?Math.max(0,parseInt(ni.value)||0):0;
+  if(A+N<1){ alert('Tiene que haber al menos una persona.'); return; }
+  const rep=(l.gente||[]).find(g=>normName(g.nombre)===normName(p.nombre));
+  if(rep && !confirm(`«${rep.nombre}» ya está apuntado (${lsGrupo(l,rep).A+lsGrupo(l,rep).N} personas).\n¿Apuntarlo otra vez como un apunte aparte?`)) return;
+  if(!Array.isArray(l.gente)) l.gente=[];
+  l.gente.push({id:uid(),nombre:p.nombre,adultos:A,ninos:N,via:lsVia,nota:'',pagA:0,pagN:0,metodo:'',creado:new Date().toISOString()});
+  save(); lsSearch=''; renderListados(); avisoBreve('✅ Apuntado: '+p.nombre+(A+N>1?' + '+(A+N-1):''));
+  const nn=document.getElementById('lsNombre'); if(nn) nn.focus();
+}
+function lsDot(gid,t,i){
+  const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g||soloLectura) return;
+  const k=t==='A'?'pagA':'pagN', cur=lsPag(l,g)[t];
+  g[k]=i<cur?i:i+1;
+  if(g[k]>cur){ g.metodo=lsMetodo; g.pagadoEl=new Date().toISOString(); }
+  save(); renderListados();
+}
+function lsTodo(gid){
+  const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g||soloLectura) return;
+  const x=lsGrupo(l,g), p=lsPag(l,g);
+  if(p.A+p.N>=x.A+x.N){ if(!confirm(`¿Quitar el pago de «${g.nombre}»?`)) return; g.pagA=0; g.pagN=0; }
+  else { g.pagA=x.A; g.pagN=x.N; g.metodo=lsMetodo; g.pagadoEl=new Date().toISOString(); }
+  save(); renderListados();
+}
+function openListado(id){
+  const c=activa(); if(!c) return; if(c.cerrada){ alert('🔒 Comisión cerrada.'); return; }
+  lsEditId=id||null; const l=id?(db.listados||[]).find(x=>x.id===id):null;
+  document.getElementById('listadoTitulo').textContent=id?'Editar listado':'📋 Nuevo listado';
+  document.getElementById('lsFiestaL').innerHTML='<option value="">(sin fiesta)</option>'+fiestasOrden(c).map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('');
+  document.getElementById('lsNomL').value=l?l.nombre||'':'';
+  document.getElementById('lsFechaL').value=l?l.fecha||'':'';
+  document.getElementById('lsFiestaL').value=l?(l.fiestaId||''):'';
+  document.getElementById('lsPrecioL').value=l&&l.precio!=null?l.precio:'';
+  document.getElementById('lsConNinosL').checked=l?!!l.conNinos:false;
+  document.getElementById('lsPrecioNinoL').value=l&&l.precioNino!=null?l.precioNino:'';
+  document.getElementById('lsNotaL').value=l?l.nota||'':'';
+  lsSyncNinos(); showModal('listadoModal'); setTimeout(()=>document.getElementById('lsNomL').focus(),50);
+}
+function lsSyncNinos(){ const on=document.getElementById('lsConNinosL').checked; const i=document.getElementById('lsPrecioNinoL'); i.disabled=!on; i.style.opacity=on?1:.4; }
+function delListado(id){
+  const l=(db.listados||[]).find(x=>x.id===id); if(!l) return;
+  const n=(l.gente||[]).length;
+  if(!confirm(`¿Enviar a la papelera el listado «${l.nombre}»${n?' con sus '+n+' apuntes':''}?`)) return;
+  db.listados=db.listados.filter(x=>x.id!==id); papeleraPush('listado',l.nombre||'(listado)',l); lsSel=''; save(); render();
+}
+function openApuntado(gid){
+  const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g) return;
+  lsApEditId=gid;
+  document.getElementById('apVia').innerHTML=Object.entries(LS_VIAS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  document.getElementById('apNombre').value=g.nombre||'';
+  document.getElementById('apAd').value=lsGrupo(l,g).A; document.getElementById('apNi').value=+g.ninos||0;
+  document.getElementById('apVia').value=g.via||'otro'; document.getElementById('apMetodo').value=g.metodo||'Efectivo';
+  document.getElementById('apPagA').value=lsPag(l,g).A; document.getElementById('apPagN').value=lsPag(l,g).N;
+  document.getElementById('apNota').value=g.nota||'';
+  document.getElementById('apNiW').style.display=l.conNinos?'':'none'; document.getElementById('apAdLbl').textContent=l.conNinos?'Adultos (contando a la persona)':'Personas (contando a la persona)'; document.getElementById('apPagNW').style.display=l.conNinos?'':'none';
+  showModal('apuntadoModal');
+}
+function delApuntado(gid){
+  const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g) return;
+  if(lsPagado(l,g)>0 && !confirm(`«${g.nombre}» ya ha pagado ${money(lsPagado(l,g))}. Si lo borras, ese dinero deja de contar como cobrado.\n¿Seguir?`)) return;
+  if(!confirm(`¿Borrar a «${g.nombre}» del listado? (va a la papelera)`)) return;
+  l.gente=l.gente.filter(x=>x.id!==gid); papeleraPush('apuntado',(g.nombre||'')+' · '+(l.nombre||''),{listadoId:l.id,g}); save(); renderListados();
+}
+function lsPegar(){
+  const l=lsListado(); if(!l) return;
+  document.getElementById('lsPegarVia').innerHTML=Object.entries(LS_VIAS).map(([k,v])=>`<option value="${k}" ${lsVia===k?'selected':''}>${v}</option>`).join('');
+  const ta=document.getElementById('lsPegarTxt'); ta.value=''; document.getElementById('lsPegarInfo').textContent='';
+  ta.oninput=()=>{ const ls=lsPegarLineas(); const per=ls.reduce((s,p)=>s+p.A+p.N,0); document.getElementById('lsPegarInfo').textContent=ls.length?`${ls.length} apuntes · ${per} personas`:''; };
+  showModal('lsPegarModal'); setTimeout(()=>ta.focus(),50);
+}
+function lsPegarLineas(){ return document.getElementById('lsPegarTxt').value.split(/\r?\n/).map(x=>x.replace(/^\s*(\d+\s*[.)\-:]|[-•*·])\s*/,'').trim()).filter(Boolean).map(lsParse).filter(p=>p.nombre); }
+function lsIngreso(){
+  const l=lsListado(); if(!l) return; const t=lsTot(l);
+  const falta=Math.round((t.cobrado-t.pasado)*100)/100;
+  if(falta<=0){ alert(t.cobrado?`Todo lo cobrado (${money(t.cobrado)}) ya está apuntado en Movimientos.`:'Todavía no ha pagado nadie.'); return; }
+  if(t.pasado>0 && !confirm(`De este listado ya hay ${money(t.pasado)} apuntados en Movimientos.\n¿Apuntar ahora lo que falta (${money(falta)})?`)) return;
+  const CAT='Comidas y cenas';
+  if(!catNames().some(n=>normName(n)===normName(CAT))) db.categorias.push({nombre:CAT,desc:'Tickets de comidas y cenas populares (se crea desde Listados)'});
+  openMov(); setTipo('ingreso');
+  document.getElementById('mImporte').value=falta;
+  const fs=document.getElementById('mFiesta'); if(l.fiestaId && [...fs.options].some(o=>o.value===l.fiestaId)) fs.value=l.fiestaId;
+  if(l.fecha && l.fecha<=hoyYMD()) document.getElementById('mFecha').value=l.fecha;
+  setMovCat(CAT);
+  document.getElementById('mConcepto').value=`${l.nombre} · ${t.pagados} personas`;
+  const mets=Object.entries(t.porMetodo);
+  if(!t.pasado && mets.length>1){ document.getElementById('mMetodo').value='Repartido'; repPartes=mets.map(([m,v])=>({metodo:m,importe:Math.round(v*100)/100})); }
+  else document.getElementById('mMetodo').value=mets.length===1?mets[0][0]:'Efectivo';
+  syncMetodoUI();
+  state.lsLink=l.id;
+}
+async function lsPdf(){
+  const l=lsListado(); if(!l) return;
+  const btn=document.getElementById('btnLsPdf'); const txt=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Creando PDF…'; }
+  try{ await cargarJsPDF(); }
+  catch(e){ if(btn){ btn.disabled=false; btn.textContent=txt; } alert('Para crear el PDF hace falta conexión a internet (solo la primera vez). Conéctate y vuelve a probar.'); return; }
+  try{
+    const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+    const W=210, M=14; let y=16; const t=lsTot(l), c=activa();
+    const f=(est,tam,col)=>{ doc.setFont('helvetica',est); doc.setFontSize(tam); doc.setTextColor(...(col||[20,20,20])); };
+    const fz=(fiestasOrden(c).find(x=>x.id===l.fiestaId)||{}).nombre||'';
+    f('bold',17); doc.text(l.nombre||'Listado',M,y); y+=6;
+    f('normal',10,[90,90,90]); doc.text([l.fecha?fmtFecha(l.fecha):'',fz,money(lsPrecio(l,'A'))+' por persona'+(l.conNinos?' · niños '+(lsPrecio(l,'N')?money(lsPrecio(l,'N')):'gratis'):'')].filter(Boolean).join('  ·  '),M,y); y+=5;
+    doc.text(`${t.personas} personas (${t.A} adultos${l.conNinos?', '+t.N+' niños':''}) · ${t.grupos} apuntes · total ${money(t.total)} · cobrado ${money(t.cobrado)} · falta ${money(t.total-t.cobrado)}`,M,y); y+=7;
+    const cols=l.conNinos?[['Pagado',16],['Nombre',72],['Adult.',15],['Niños',15],['Importe',24],['Nota',40]]:[['Pagado',16],['Nombre',82],['Pers.',16],['Importe',26],['Nota',42]];
+    const cab=()=>{ doc.setFillColor(30,41,59); doc.rect(M,y,W-2*M,7,'F'); f('bold',9,[255,255,255]); let x=M; cols.forEach(([n,w])=>{ doc.text(n,x+2,y+4.8); x+=w; }); y+=7; };
+    cab();
+    const gente=(l.gente||[]).slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
+    gente.forEach((g,i)=>{
+      const x0=lsGrupo(l,g), p=lsPag(l,g), tot=x0.A+x0.N, pp=p.A+p.N, h=8;
+      if(y+h>283){ doc.addPage(); y=14; cab(); }
+      if(i%2){ doc.setFillColor(243,245,248); doc.rect(M,y,W-2*M,h,'F'); }
+      let x=M;
+      doc.setDrawColor(60); doc.setLineWidth(0.35); doc.rect(x+5,y+1.8,4.4,4.4);
+      if(tot>0&&pp>=tot){ doc.setDrawColor(22,140,60); doc.setLineWidth(0.8); doc.line(x+5.7,y+4.2,x+7,y+5.6); doc.line(x+7,y+5.6,x+9.9,y+1.4); }
+      else if(pp>0){ f('bold',7,[180,110,0]); doc.text(pp+'/'+tot,x+10.5,y+5.4); }
+      doc.setLineWidth(0.2); x+=cols[0][1];
+      f('bold',10); const nom=doc.splitTextToSize((g.nombre||'')+(tot>1?'  (+'+(tot-1)+')':''),cols[1][1]-3)[0]; doc.text(nom,x+2,y+5.4);
+      if(tot>0&&pp>=tot){ const w=doc.getTextWidth(nom); doc.setDrawColor(120); doc.line(x+2,y+4,x+2+w,y+4); }
+      x+=cols[1][1];
+      f('normal',10);
+      if(l.conNinos){ doc.text(String(x0.A),x+2,y+5.4); x+=cols[2][1]; doc.text(String(x0.N),x+2,y+5.4); x+=cols[3][1]; }
+      else { doc.text(String(x0.A),x+2,y+5.4); x+=cols[2][1]; }
+      const ic=cols[cols.length-2][1]; doc.text(money(lsDebe(l,g)),x+ic-2,y+5.4,{align:'right'}); x+=ic;
+      f('normal',8,[90,90,90]); doc.text(doc.splitTextToSize(g.nota||'',cols[cols.length-1][1]-3)[0]||'',x+2,y+5.4);
+      y+=h;
+    });
+    y+=3; if(y>280){ doc.addPage(); y=16; }
+    doc.setDrawColor(30,41,59); doc.setLineWidth(0.5); doc.line(M,y,W-M,y); y+=5;
+    f('bold',10); doc.text(`TOTAL: ${t.personas} personas · ${money(t.total)}`,M,y);
+    const np=doc.getNumberOfPages();
+    for(let i=1;i<=np;i++){ doc.setPage(i); f('normal',8,[120,120,120]); doc.text(`${l.nombre} · Comisión de Fiestas de Josa · ${new Date().toLocaleDateString('es-ES')}${np>1?'   ('+i+'/'+np+')':''}`,W/2,291,{align:'center'}); }
+    const nombre='Listado - '+String(l.nombre||'').replace(/[\\/:*?"<>|]/g,'')+'.pdf';
+    const u=URL.createObjectURL(doc.output('blob'));
+    const a=document.createElement('a'); a.href=u; a.download=nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),60000);
+    avisoBreve('✅ PDF guardado: '+nombre);
+  }catch(e){ alert('No se pudo crear el PDF: '+e.message); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=txt; } }
 }
 
 /* ============ PRÉSTAMOS (material de la comisión que se deja a vecinos) ============ */
@@ -3158,6 +3484,43 @@ document.getElementById('catOptions').addEventListener('click',e=>{
 document.addEventListener('click',e=>{ if(!e.target.closest('#catPop') && !e.target.closest('#catBtn')) closeCatPop(); });
 
 document.getElementById('mReciboFile').onchange=function(){ handleReciboFile(this); };
+
+/* Listados: guardar listado, apuntado y lista pegada */
+document.getElementById('lsConNinosL').onchange=lsSyncNinos;
+document.getElementById('lsGuardarL').onclick=()=>{
+  const c=activa(); if(!c) return;
+  const nombre=document.getElementById('lsNomL').value.trim(); if(!nombre){ alert('Ponle un nombre al listado (ej: Comida de Halloween).'); return; }
+  const pr=document.getElementById('lsPrecioL').value, prn=document.getElementById('lsPrecioNinoL').value;
+  const data={nombre, fecha:document.getElementById('lsFechaL').value, fiestaId:document.getElementById('lsFiestaL').value,
+    precio:pr===''?'':Math.max(0,parseFloat(pr)||0), conNinos:document.getElementById('lsConNinosL').checked, precioNino:prn===''?'':Math.max(0,parseFloat(prn)||0),
+    nota:document.getElementById('lsNotaL').value.trim(), mod:new Date().toISOString()};
+  if(lsEditId){ Object.assign(db.listados.find(x=>x.id===lsEditId),data); }
+  else { const n=Object.assign({id:uid(),comisionId:c.id,gente:[],creado:new Date().toISOString()},data); db.listados.push(n); lsSel=n.id; lsSearch=''; lsFiltro=''; }
+  save(); closeModal('listadoModal'); render();
+};
+document.getElementById('apGuardar').onclick=()=>{
+  const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===lsApEditId); if(!g) return;
+  const nombre=document.getElementById('apNombre').value.trim(); if(!nombre){ alert('Escribe el nombre.'); return; }
+  const A=Math.max(0,parseInt(document.getElementById('apAd').value)||0), N=l.conNinos?Math.max(0,parseInt(document.getElementById('apNi').value)||0):(+g.ninos||0);
+  if(A+(l.conNinos?N:0)<1){ alert('Tiene que haber al menos una persona.'); return; }
+  const antes=lsPagado(l,g);
+  Object.assign(g,{nombre,adultos:A,ninos:N,via:document.getElementById('apVia').value,nota:document.getElementById('apNota').value.trim(),
+    pagA:Math.min(A,Math.max(0,parseInt(document.getElementById('apPagA').value)||0)), pagN:Math.min(N,Math.max(0,parseInt(document.getElementById('apPagN').value)||0)),
+    metodo:document.getElementById('apMetodo').value});
+  if(lsPagado(l,g)>antes) g.pagadoEl=new Date().toISOString();
+  save(); closeModal('apuntadoModal'); renderListados();
+};
+document.getElementById('lsPegarOk').onclick=()=>{
+  const l=lsListado(); if(!l) return;
+  const ls=lsPegarLineas(); if(!ls.length){ alert('Pega o escribe al menos un nombre.'); return; }
+  const via=document.getElementById('lsPegarVia').value; lsVia=via;
+  const ya=new Set((l.gente||[]).map(g=>normName(g.nombre))); const rep=ls.filter(p=>ya.has(normName(p.nombre)));
+  let lista=ls;
+  if(rep.length){ const r=confirm(`${rep.length} ya estaban apuntados: ${rep.map(p=>p.nombre).slice(0,6).join(', ')}${rep.length>6?'…':''}.\n\nAceptar = no repetirlos · Cancelar = apuntarlos igualmente`); if(r) lista=ls.filter(p=>!ya.has(normName(p.nombre))); }
+  if(!Array.isArray(l.gente)) l.gente=[];
+  lista.forEach(p=>l.gente.push({id:uid(),nombre:p.nombre,adultos:l.conNinos?p.A:p.A+p.N,ninos:l.conNinos?p.N:0,via,nota:'',pagA:0,pagN:0,metodo:'',creado:new Date().toISOString()}));
+  save(); closeModal('lsPegarModal'); renderListados(); avisoBreve(`✅ ${lista.length} apuntes añadidos`);
+};
 
 /* Guardar tarea */
 document.getElementById('taGuardar').onclick=()=>{
