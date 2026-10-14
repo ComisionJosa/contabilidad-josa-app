@@ -2485,9 +2485,9 @@ function renderListados(){
   }
   const q=normName(lsSearch);
   const estado=g=>{ const x=lsGrupo(l,g), p=lsPag(l,g), per=x.A+x.N, pp=p.A+p.N; return per>0&&pp>=per?'pag':(pp>0?'med':'no'); };
-  const lista=(l.gente||[]).filter(g=>(!q||normName([g.nombre,g.nota].join(' ')).includes(q)) && (!lsFiltro||estado(g)===lsFiltro))
+  const lista=(l.gente||[]).filter(g=>(!q||normName([g.nombre,g.nota].join(' ')).includes(q)) && (!lsFiltro||(lsFiltro==='pag'?estado(g)==='pag':estado(g)!=='pag')))
     .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
-  const chips=[['','Todos',t.grupos],['no','⏳ Sin pagar',t.gNo],['med','½ A medias',t.gMed],['pag','✅ Pagados',t.gPag]];
+  const chips=[['','Todos',t.grupos],['no','⏳ Sin pagar',t.gNo+t.gMed],['pag','✅ Pagados',t.gPag]];
   html+=`<div class="toolbar" style="margin-top:6px"><input type="text" id="lsBuscar" placeholder="🔎 Buscar nombre…" value="${esc(lsSearch)}" style="min-width:200px;flex:1 1 200px">
     <div class="nt-chips">${chips.map(([k,tx,n])=>`<button class="${lsFiltro===k?'on':''}" onclick="lsFiltro='${k}';renderListados()">${tx} (${n})</button>`).join('')}</div>
   </div>`;
