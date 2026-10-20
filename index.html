@@ -2453,7 +2453,7 @@ function renderListados(){
   const ro=soloLectura||!!c.cerrada;
   const fiestas=fiestasOrden(c);
   const fNom=fid=>{ const f=fiestas.find(x=>x.id===fid); return f?(EMO[f.tipo]||'🎪')+' '+f.nombre:''; };
-  const ls=listadosDe(c.id).slice().sort((a,b)=>(a.fecha||'9999').localeCompare(b.fecha||'9999'));
+  const ls=listadosDe(c.id).slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
   let html=`<div class="section-title"><h2>📋 Listados</h2>${ro?'':'<button class="primary" onclick="openListado()">+ Nuevo listado</button>'}</div>
   <p class="muted" style="margin:-6px 0 12px">La gente que se apunta a cada comida o cena (por la lista del bar, WhatsApp, Instagram, correo…) y quién ha pagado. Comisión <b>${esc(c.nombre)}</b>.</p>`;
   if(!ls.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ningún listado.<br>Crea uno por cada comida o cena (p. ej. «Comida de Halloween») y ve apuntando a la gente.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openListado()">+ Nuevo listado</button>'}</div>`; return; }
