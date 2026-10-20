@@ -278,7 +278,7 @@
   body.solo-lectura .adj-no{display:none !important}
   body.solo-lectura #btnAjustes{display:none !important}
   body.solo-lectura [onclick*="openTarea"], body.solo-lectura [onclick*="delTarea"]{display:none !important}
-  body.solo-lectura [onclick*="openListado"], body.solo-lectura [onclick*="delListado"], body.solo-lectura [onclick*="openApuntado"], body.solo-lectura [onclick*="delApuntado"], body.solo-lectura [onclick*="lsPegar"], body.solo-lectura [onclick*="lsIngreso"], body.solo-lectura .ls-add{display:none !important}
+  body.solo-lectura [onclick*="openListado"], body.solo-lectura [onclick*="openCaja"], body.solo-lectura [onclick*="delCaja"], body.solo-lectura [onclick*="cjIngreso"], body.solo-lectura [onclick*="delListado"], body.solo-lectura [onclick*="openApuntado"], body.solo-lectura [onclick*="delApuntado"], body.solo-lectura [onclick*="lsPegar"], body.solo-lectura [onclick*="lsIngreso"], body.solo-lectura .ls-add{display:none !important}
   body.sin-conectar header button, body.sin-conectar header .comi-pick{display:none !important}
   body.solo-lectura header [onclick*="guia.html"]{display:none !important}
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
@@ -288,6 +288,26 @@
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  /* ---- Cajas (arqueo) ---- */
+  .cj-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:8px 14px;align-items:center}
+  .cj-card h3{margin:0;font-size:16px} .cj-card .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .cj-nums{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/-1}
+  .cj-num{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:118px}
+  .cj-num .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700} .cj-num .v{font-size:16px;font-weight:800}
+  .cj-num.barra{border-color:var(--green)} .cj-num.barra .v{color:var(--green)}
+  .cj-est{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+  .cj-est.abierta{background:#14324a;color:#9fd2ff} .cj-est.contada{background:#3a2e10;color:#ffd27a} .cj-est.apuntada{background:#123824;color:#8ff0b5}
+  .cj-tbl{width:100%;border-collapse:collapse;margin:4px 0 10px} .cj-tbl th{font-size:12px;color:var(--muted);text-align:left;padding:4px 6px;font-weight:700}
+  .cj-tbl td{padding:3px 6px;border-bottom:1px solid var(--line)} .cj-tbl td.den{font-weight:700;white-space:nowrap}
+  .cj-tbl input{width:78px;padding:6px 8px} .cj-tbl small{color:var(--muted);margin-left:6px;white-space:nowrap;display:inline-block;min-width:62px}
+  .cj-tbl tr.sep td{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;padding-top:10px;border-bottom:0}
+  .cj-tbl tfoot td{font-weight:800;font-size:15px;border-bottom:0;padding-top:8px}
+  .cj-res{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:10px}
+  .cj-res div{display:flex;justify-content:space-between;gap:10px;padding:3px 0} .cj-res .tot{border-top:1px solid var(--line);margin-top:4px;padding-top:7px;font-size:17px;font-weight:800;color:var(--green)}
+  .cj-pago{display:flex;gap:6px;margin-bottom:6px} .cj-pago input[type=text]{flex:1} .cj-pago input[type=number]{width:100px}
+  .cj-help{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin-bottom:12px}
+  .cj-help summary{cursor:pointer;font-weight:700;padding:8px 0} .cj-help ol{margin:4px 0 10px;padding-left:20px;line-height:1.55}
+  @media(max-width:600px){ .cj-tbl input{width:60px} .cj-tbl small{min-width:0;display:block;margin:2px 0 0} .cj-num{min-width:0;flex:1 1 40%} }
   /* ---- Listados (comidas y cenas) ---- */
   .ls-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
   .ls-kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
@@ -470,6 +490,7 @@
   <button data-tab="notas">📝 Anotaciones</button>
   <button data-tab="tareas">✅ Tareas</button>
   <button data-tab="listados">📋 Listados</button>
+  <button data-tab="cajas">💰 Cajas</button>
   <button data-tab="premios">🏆 Concursos</button>
   <button data-tab="prestamos">🤝 Préstamos</button>
   <button data-tab="contactos">📇 Contactos</button>
@@ -646,6 +667,31 @@
   <div class="field"><label>Nota (opcional)</label><textarea id="taNota" rows="3" placeholder="Teléfono, cantidades, detalles…"></textarea></div>
   <label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="taRepite"> 🔁 Se repite cada año (pasa a la comisión siguiente con la fecha del año nuevo)</label>
   <div class="modal-actions"><button class="ghost" onclick="closeModal('tareaModal')">Cancelar</button><button class="primary" id="taGuardar">Guardar</button></div>
+</div></div>
+
+<!-- MODAL CAJA (arqueo) -->
+<div class="modal-bg" id="cajaModal"><div class="modal" style="max-width:760px">
+  <h3 id="cajaTitulo">Nueva caja</h3>
+  <div class="field"><label>Nombre de la caja</label><input type="text" id="cjNombre" placeholder="Ej: Barra Halloween (sábado noche)"></div>
+  <div class="field two">
+    <div><label>Fiesta</label><select id="cjFiesta"></select></div>
+    <div><label>Día</label><input type="date" id="cjFecha"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
+    <b>💶 Billetes y monedas</b>
+    <select id="cjCopiar" style="max-width:300px"></select>
+  </div>
+  <p class="muted" style="margin:4px 0 6px;font-size:13px">Pon <b>cuántos</b> hay de cada uno (no el dinero): el programa suma solo.</p>
+  <table class="cj-tbl"><thead><tr><th></th><th>🟢 Al empezar (cambio)</th><th>🔴 Al cerrar</th></tr></thead><tbody id="cjFilas"></tbody>
+    <tfoot><tr><td>Total</td><td id="cjTotIni"></td><td id="cjTotFin"></td></tr></tfoot></table>
+  <b>🧾 Pagos hechos con dinero de esta caja</b> <span class="muted" style="font-size:13px">(hielo, propinas, lo que sea; luego apúntalos como gasto en efectivo)</span>
+  <div id="cjPagos" style="margin-top:6px"></div>
+  <button class="ghost" onclick="cjAddPago()" style="margin-bottom:10px">+ Añadir pago</button>
+  <div id="cjListadosW"><b>🎟️ ¿Entró aquí el dinero de algún listado?</b> <span class="muted" style="font-size:13px">(tickets de comidas/cenas cobrados en esta caja: ya se apuntan desde Listados)</span>
+    <div id="cjListados" style="margin:6px 0 4px"></div></div>
+  <div class="cj-res" id="cjRes"></div>
+  <div class="field" style="margin-top:10px"><label>Nota (opcional)</label><input type="text" id="cjNota" placeholder="Quién la ha contado, incidencias…"></div>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('cajaModal')">Cancelar</button><button class="primary" id="cjGuardar">Guardar</button></div>
 </div></div>
 
 <!-- MODAL LISTADO -->
@@ -852,6 +898,7 @@ function normaliza(d){
   d.prestamos = Array.isArray(d.prestamos)?d.prestamos:[];
   d.tareas = Array.isArray(d.tareas)?d.tareas:[];
   d.listados = Array.isArray(d.listados)?d.listados:[];
+  d.cajas = Array.isArray(d.cajas)?d.cajas:[];
   d.stockCats = Array.isArray(d.stockCats)?d.stockCats:[];
   // stock ahora es POR COMISIÓN
   d.comisiones.forEach(c=>{ if(!Array.isArray(c.stock)) c.stock=[]; });
@@ -1267,7 +1314,7 @@ function render(){
   document.getElementById('nav').style.display=state.tab==='ajustes'?'none':'';
   medirBarras();
   if(!activa()){content.innerHTML='<div class="empty">No hay comisiones. Créala en la pestaña Comisiones.</div>';return;}
-  ({resumen:renderResumen,movs:renderMovs,panel:renderPanel,contactos:renderContactos,notas:renderNotas,premios:renderPremios,prestamos:renderPrestamos,tareas:renderTareas,listados:renderListados,stock:renderStock,comisiones:renderComisiones,ajustes:renderAjustes}[state.tab])();
+  ({resumen:renderResumen,movs:renderMovs,panel:renderPanel,contactos:renderContactos,notas:renderNotas,premios:renderPremios,prestamos:renderPrestamos,tareas:renderTareas,listados:renderListados,cajas:renderCajas,stock:renderStock,comisiones:renderComisiones,ajustes:renderAjustes}[state.tab])();
   if(state.tab==='ajustes') content.insertAdjacentHTML('afterbegin',`<div class="section-title" style="border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px"><h2>⚙️ Copias y datos</h2><button class="primary" onclick="cerrarAjustes()" title="Volver al programa (Esc)">✕ Cerrar</button></div>`);
 }
 function renderComiSelect(){
@@ -1730,7 +1777,7 @@ async function cargarInfoCarpeta(){
 /* ============ MOVIMIENTO ============ */
 function openMov(id){
   if(esCerrada()){alert('🔒 Esta comisión está cerrada (solo lectura).');return;}
-  state.editMovId=id||null;state.lsLink=null;const c=activa();
+  state.editMovId=id||null;state.lsLink=null;state.cjLink=null;const c=activa();
   const acts=fiestasOrden(c).filter(f=>f.activa);
   document.getElementById('mFiesta').innerHTML=acts.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('')||'<option value="">(no hay fiestas activas)</option>';
   if(id){const m=db.movimientos.find(x=>x.id===id);document.getElementById('movModalTitle').textContent='Editar movimiento';setTipo(m.tipo);
@@ -1823,7 +1870,7 @@ document.getElementById('mGuardar').onclick=()=>{
     data.pagos=partes;
   } else data.pagos=undefined;
   if(state.editMovId){const t=db.movimientos.find(x=>x.id===state.editMovId);Object.assign(t,data);delete t.recibo;if(!t.pagos)delete t.pagos;}
-  else{const nm={id:uid(),...data}; if(state.lsLink) nm.listadoId=state.lsLink; db.movimientos.push(nm);}
+  else{const nm={id:uid(),...data}; if(state.lsLink) nm.listadoId=state.lsLink; if(state.cjLink) nm.cajaId=state.cjLink; db.movimientos.push(nm);}
   if(save()){closeModal('movModal');render();}
 };
 
@@ -2060,8 +2107,8 @@ function delMov(id){
   save(); render();
 }
 /* ============ PAPELERA (unificada: movimientos, contactos, categorías, comisiones) ============ */
-const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝',tarea:'✅',listado:'📋',apuntado:'🙋'};
-const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo',tarea:'Tarea',listado:'Listado de comida/cena',apuntado:'Apuntado a un listado'};
+const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝',tarea:'✅',listado:'📋',apuntado:'🙋',caja:'💰'};
+const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo',tarea:'Tarea',listado:'Listado de comida/cena',apuntado:'Apuntado a un listado',caja:'Caja (arqueo)'};
 function papeleraPush(tipo,titulo,payload){ db.papelera.push({id:uid(),tipo,titulo:titulo||'',deletedAt:new Date().toISOString(),payload}); }
 function fmtFechaHora(iso){ if(!iso)return ''; const s=String(iso); const d=s.slice(0,10).split('-'); return (d.length===3?`${d[2]}/${d[1]}/${d[0]}`:s.slice(0,10))+' '+s.slice(11,16); }
 function openPapelera(){ paintPapelera(); showModal('papeleraModal'); }
@@ -2089,6 +2136,7 @@ function restaurarItem(pid){
   else if(it.tipo==='prestamo'){ db.prestamos.push(it.payload); }
   else if(it.tipo==='tarea'){ db.tareas.push(it.payload); }
   else if(it.tipo==='listado'){ db.listados.push(it.payload); }
+  else if(it.tipo==='caja'){ db.cajas.push(it.payload); }
   else if(it.tipo==='apuntado'){ const p=it.payload||{}; const l=db.listados.find(x=>x.id===p.listadoId); if(!l){ alert('No se puede restaurar: el listado de esta persona ya no existe.'); return; } if(!Array.isArray(l.gente))l.gente=[]; l.gente.push(p.g); }
   else if(it.tipo==='categoria'){ const nm=it.payload.nombre; if(catNames().some(c=>normName(c)===normName(nm))){ alert('Ya existe una categoría "'+nm+'". No se restaura para no duplicar.'); return; } db.categorias.push(it.payload); }
   else if(it.tipo==='comision'){ const p=it.payload; if(db.comisiones.some(c=>c.id===p.comision.id)){ alert('Esa comisión ya existe.'); return; } db.comisiones.push(p.comision); (p.movimientos||[]).forEach(m=>db.movimientos.push(m)); }
@@ -2416,6 +2464,141 @@ function heredarTareas(nueva){
     db.tareas.push({id:uid(),comisionId:nueva.id,fiestaId:mapF[t.fiestaId]||'',titulo:t.titulo,fecha:f,responsable:'',nota:t.nota||'',repite:true,hecha:false,creado:new Date().toISOString()}); n++;
   });
   return n;
+}
+
+/* ============ CAJAS (arqueo: cambio al empezar, recuento al cerrar → ingreso de barra) ============ */
+let cjEditId=null, cjDraft=null;
+const CJ_DEN=[50000,20000,10000,5000,2000,1000,500,200,100,50,20,10,5,2,1];   // en céntimos
+function cjDenTxt(c){ return c>=100?(c/100)+' €':c+' cént'; }
+function cjUds(o,d){ return Math.max(0,parseInt((o||{})[d])||0); }
+function cjTotal(o){ return CJ_DEN.reduce((t,d)=>t+cjUds(o,d)*d,0)/100; }
+function cajasDe(cid){ return (db.cajas||[]).filter(k=>k.comisionId===cid); }
+function cjCalc(k){
+  const ini=cjTotal(k.inicio), fin=cjTotal(k.fin), contada=fin>0;
+  const pagos=(k.pagos||[]).reduce((t,p)=>t+(parseFloat(p.importe)||0),0);
+  const tickets=(k.listados||[]).reduce((t,id)=>{ const l=(db.listados||[]).find(x=>x.id===id); return t+(l?lsTot(l).cobrado:0); },0);
+  const recaudado=fin-ini+pagos, barra=Math.round((recaudado-tickets)*100)/100;
+  const apuntado=db.movimientos.filter(m=>m.cajaId===k.id).reduce((t,m)=>t+(+m.importe||0),0);
+  const estado=!contada?'abierta':(apuntado>0&&Math.abs(apuntado-barra)<0.01?'apuntada':'contada');
+  return {ini,fin,pagos,tickets,recaudado,barra,apuntado,contada,estado};
+}
+const CJ_EST={abierta:'🟢 Abierta · falta contar al cerrar',contada:'🔴 Contada · falta apuntar el ingreso',apuntada:'✅ Apuntada en Movimientos'};
+function renderCajas(){
+  const c=activa(); if(!c){ content.innerHTML='<div class="empty">No hay comisiones.</div>'; return; }
+  const ro=soloLectura||!!c.cerrada, fiestas=fiestasOrden(c);
+  const fNom=fid=>{ const f=fiestas.find(x=>x.id===fid); return f?(EMO[f.tipo]||'🎪')+' '+f.nombre:'Sin fiesta'; };
+  const ks=cajasDe(c.id).slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')||(b.creado||'').localeCompare(a.creado||''));
+  let html=`<div class="section-title"><h2>💰 Cajas</h2>${ro?'':'<button class="primary" onclick="openCaja()">+ Nueva caja</button>'}</div>
+  <details class="cj-help" ${ks.length?'':'open'}><summary>❓ ¿Cómo se lleva una caja?</summary><ol>
+    <li><b>Al empezar</b>: cuenta el cambio que metes (cuántos billetes y monedas de cada) y apúntalo en «Al empezar». No es un gasto: es dinero de la comisión que cambia de sitio.</li>
+    <li><b>Durante la noche</b>: si se paga algo con dinero de la caja (hielo, una propina…), apúntalo en un papel.</li>
+    <li><b>Al cerrar</b>: vuelve a contar todo y apúntalo en «Al cerrar». Añade los pagos hechos con la caja.</li>
+    <li>Si en esa caja también se cobraron tickets de una comida o cena, márcalo: ese dinero ya se apunta desde 📋 Listados.</li>
+    <li>El programa te dice <b>lo que ha hecho la barra</b> = al cerrar − al empezar + pagos − tickets. Pulsa <b>💶 Apuntar ingreso</b> y queda en Movimientos.</li>
+    <li>El cambio del principio se aparta para la siguiente vez (puedes copiarlo en la caja nueva) o vuelve al banco.</li></ol></details>`;
+  if(!ks.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ninguna caja.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openCaja()">+ Nueva caja</button>'}</div>`; return; }
+  const tot=ks.reduce((t,k)=>{ const r=cjCalc(k); if(r.contada){ t.barra+=r.barra; t.n++; } return t; },{barra:0,n:0});
+  if(tot.n) html+=`<div class="pill" style="margin-bottom:10px">💶 Barras contadas: <b>${money(tot.barra)}</b> en ${tot.n} caja${tot.n===1?'':'s'}</div>`;
+  html+=ks.map(k=>{ const r=cjCalc(k);
+    return `<div class="cj-card">
+      <div><h3>${esc(k.nombre||'Caja')}</h3><div class="meta">${esc(fNom(k.fiestaId))}${k.fecha?' · 📅 '+fmtFecha(k.fecha):''}${k.nota?' · '+esc(k.nota):''}</div></div>
+      <span class="cj-est ${r.estado}">${CJ_EST[r.estado]}</span>
+      <div class="cj-nums">
+        <div class="cj-num"><div class="l">🟢 Cambio inicial</div><div class="v">${money(r.ini)}</div></div>
+        <div class="cj-num"><div class="l">🔴 Al cerrar</div><div class="v">${r.contada?money(r.fin):'—'}</div></div>
+        ${r.pagos?`<div class="cj-num"><div class="l">🧾 Pagos con caja</div><div class="v">${money(r.pagos)}</div></div>`:''}
+        ${r.tickets?`<div class="cj-num"><div class="l">🎟️ Tickets</div><div class="v">${money(r.tickets)}</div></div>`:''}
+        <div class="cj-num barra"><div class="l">🍺 Barra</div><div class="v">${r.contada?money(r.barra):'—'}</div></div>
+      </div>
+      ${ro?'':`<div style="grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="${r.contada?'ghost':'primary'}" onclick="openCaja('${k.id}')">${r.contada?'✏️ Ver / editar':'🔴 Contar al cerrar'}</button>
+        ${r.contada&&r.estado!=='apuntada'?`<button class="primary" onclick="cjIngreso('${k.id}')">💶 Apuntar ingreso de barra</button>`:''}
+        <button class="icon-btn danger" onclick="delCaja('${k.id}')" title="Borrar">🗑️</button></div>`}
+    </div>`; }).join('');
+  content.innerHTML=html;
+}
+function openCaja(id){
+  const c=activa(); if(!c) return; if(c.cerrada){ alert('🔒 Comisión cerrada.'); return; }
+  cjEditId=id||null; const k=id?(db.cajas||[]).find(x=>x.id===id):null;
+  cjDraft=JSON.parse(JSON.stringify(k||{inicio:{},fin:{},pagos:[],listados:[]}));
+  ['inicio','fin'].forEach(x=>{ if(!cjDraft[x]) cjDraft[x]={}; }); if(!Array.isArray(cjDraft.pagos)) cjDraft.pagos=[]; if(!Array.isArray(cjDraft.listados)) cjDraft.listados=[];
+  document.getElementById('cajaTitulo').textContent=id?'💰 '+(k.nombre||'Caja'):'💰 Nueva caja';
+  const fs=fiestasOrden(c);
+  document.getElementById('cjFiesta').innerHTML='<option value="">(sin fiesta)</option>'+fs.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('');
+  document.getElementById('cjNombre').value=k?k.nombre||'':'';
+  document.getElementById('cjFecha').value=k?k.fecha||'':hoyYMD();
+  document.getElementById('cjFiesta').value=k?(k.fiestaId||''):((fs.find(f=>f.activa)||{}).id||'');
+  document.getElementById('cjNota').value=k?k.nota||'':'';
+  const otras=(db.cajas||[]).filter(x=>x.id!==id && cjTotal(x.inicio)>0).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const cp=document.getElementById('cjCopiar');
+  cp.innerHTML='<option value="">📋 Copiar el cambio de otra caja…</option>'+otras.map(x=>`<option value="${x.id}">${esc(x.nombre||'Caja')}${x.fecha?' ('+fmtFecha(x.fecha)+')':''} · ${money(cjTotal(x.inicio))}</option>`).join('');
+  cp.style.display=otras.length?'':'none';
+  cp.onchange=()=>{ const o=(db.cajas||[]).find(x=>x.id===cp.value); if(o){ cjDraft.inicio=JSON.parse(JSON.stringify(o.inicio||{})); cjPintarFilas(); } cp.value=''; };
+  cjPintarFilas(); cjPintarPagos(); cjPintarListados();
+  showModal('cajaModal');
+}
+function cjPintarFilas(){
+  const fila=d=>`<tr><td class="den">${d>=500?'💶':'🪙'} ${cjDenTxt(d)}</td>`+['inicio','fin'].map(x=>`<td><input type="number" min="0" step="1" inputmode="numeric" data-k="${x}" data-d="${d}" value="${cjUds(cjDraft[x],d)||''}" placeholder="0"><small id="cjS_${x}_${d}"></small></td>`).join('')+'</tr>';
+  document.getElementById('cjFilas').innerHTML='<tr class="sep"><td colspan="3">Billetes</td></tr>'+CJ_DEN.filter(d=>d>=500).map(fila).join('')+'<tr class="sep"><td colspan="3">Monedas</td></tr>'+CJ_DEN.filter(d=>d<500).map(fila).join('');
+  document.querySelectorAll('#cjFilas input').forEach(i=>i.oninput=()=>{ const v=Math.max(0,parseInt(i.value)||0); if(v) cjDraft[i.dataset.k][i.dataset.d]=v; else delete cjDraft[i.dataset.k][i.dataset.d]; cjActualizar(); });
+  cjActualizar();
+}
+function cjPintarPagos(){
+  document.getElementById('cjPagos').innerHTML=cjDraft.pagos.map((p,i)=>`<div class="cj-pago"><input type="text" data-i="${i}" data-f="concepto" value="${esc(p.concepto||'')}" placeholder="Concepto (ej: 10 sacos de hielo)"><input type="number" min="0" step="0.01" data-i="${i}" data-f="importe" value="${p.importe??''}" placeholder="€"><button class="icon-btn danger" onclick="cjQuitarPago(${i})">✕</button></div>`).join('');
+  document.querySelectorAll('#cjPagos input').forEach(i=>i.oninput=()=>{ cjDraft.pagos[+i.dataset.i][i.dataset.f]=i.value; cjActualizar(); });
+}
+function cjAddPago(){ cjDraft.pagos.push({concepto:'',importe:''}); cjPintarPagos(); cjActualizar(); const ins=document.querySelectorAll('#cjPagos input[type=text]'); if(ins.length) ins[ins.length-1].focus(); }
+function cjQuitarPago(i){ cjDraft.pagos.splice(i,1); cjPintarPagos(); cjActualizar(); }
+function cjPintarListados(){
+  const c=activa(), ls=listadosDe(c.id).filter(l=>lsTot(l).cobrado>0||cjDraft.listados.includes(l.id));
+  document.getElementById('cjListadosW').style.display=ls.length?'':'none';
+  document.getElementById('cjListados').innerHTML=ls.map(l=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:3px 0"><input type="checkbox" value="${l.id}" ${cjDraft.listados.includes(l.id)?'checked':''}> 📋 ${esc(l.nombre)} · cobrado ${money(lsTot(l).cobrado)}</label>`).join('');
+  document.querySelectorAll('#cjListados input').forEach(i=>i.onchange=()=>{ cjDraft.listados=[...document.querySelectorAll('#cjListados input:checked')].map(x=>x.value); cjActualizar(); });
+}
+function cjActualizar(){
+  CJ_DEN.forEach(d=>['inicio','fin'].forEach(x=>{ const el=document.getElementById(`cjS_${x}_${d}`); if(el){ const u=cjUds(cjDraft[x],d); el.textContent=u?'= '+money(u*d/100):''; } }));
+  const r=cjCalc(cjDraft);
+  document.getElementById('cjTotIni').textContent=money(r.ini); document.getElementById('cjTotFin').textContent=r.contada?money(r.fin):'—';
+  document.getElementById('cjRes').innerHTML=!r.contada
+    ? `<div><span>🟢 Cambio al empezar</span><b>${money(r.ini)}</b></div><div class="muted" style="display:block">Cuando cerréis, vuelve aquí y apunta lo que hay en «Al cerrar».</div>`
+    : `<div><span>🔴 Al cerrar</span><b>${money(r.fin)}</b></div>
+       <div><span>− Cambio que se metió al empezar</span><b>${money(-r.ini)}</b></div>
+       ${r.pagos?`<div><span>+ Pagos hechos con la caja</span><b>${money(r.pagos)}</b></div>`:''}
+       <div><span>= Recaudado en la caja</span><b>${money(r.recaudado)}</b></div>
+       ${r.tickets?`<div><span>− Tickets de listados (ya apuntados aparte)</span><b>${money(-r.tickets)}</b></div>`:''}
+       <div class="tot"><span>🍺 Ha hecho la barra</span><span>${money(r.barra)}</span></div>
+       ${r.barra<0?'<div style="color:#ff9b9b;display:block">⚠️ Sale negativo: revisa el recuento o los pagos.</div>':''}`;
+}
+document.getElementById('cjGuardar').onclick=()=>{
+  const c=activa(); if(!c||!cjDraft) return;
+  const fid=document.getElementById('cjFiesta').value, f=fiestasOrden(c).find(x=>x.id===fid);
+  const nombre=document.getElementById('cjNombre').value.trim()||('Caja'+(f?' '+f.nombre:''));
+  cjDraft.pagos=cjDraft.pagos.filter(p=>(p.concepto||'').trim()||parseFloat(p.importe)).map(p=>({concepto:(p.concepto||'').trim(),importe:Math.round((parseFloat(p.importe)||0)*100)/100}));
+  const data={nombre,fiestaId:fid,fecha:document.getElementById('cjFecha').value,nota:document.getElementById('cjNota').value.trim(),inicio:cjDraft.inicio,fin:cjDraft.fin,pagos:cjDraft.pagos,listados:cjDraft.listados,mod:new Date().toISOString()};
+  if(cjEditId) Object.assign(db.cajas.find(x=>x.id===cjEditId),data);
+  else db.cajas.push(Object.assign({id:uid(),comisionId:c.id,creado:new Date().toISOString()},data));
+  save(); closeModal('cajaModal'); render();
+};
+function delCaja(id){
+  const k=(db.cajas||[]).find(x=>x.id===id); if(!k) return;
+  if(!confirm(`¿Enviar a la papelera la caja «${k.nombre}»?`+(cjCalc(k).apuntado?'\n(El ingreso que ya apuntaste en Movimientos se queda allí.)':''))) return;
+  db.cajas=db.cajas.filter(x=>x.id!==id); papeleraPush('caja',k.nombre||'(caja)',k); save(); render();
+}
+function cjIngreso(id){
+  const k=(db.cajas||[]).find(x=>x.id===id); if(!k) return; const r=cjCalc(k);
+  if(!r.contada){ alert('Primero cuenta la caja al cerrar.'); return; }
+  const falta=Math.round((r.barra-r.apuntado)*100)/100;
+  if(falta<=0){ alert(r.barra<=0?'La barra sale a 0 o negativa: revisa el recuento.':'El ingreso de esta caja ya está apuntado.'); return; }
+  if(r.apuntado>0 && !confirm(`De esta caja ya hay ${money(r.apuntado)} apuntados. ¿Apuntar la diferencia (${money(falta)})?`)) return;
+  const CAT='Barra';
+  if(!catNames().some(n=>normName(n)===normName(CAT))) db.categorias.push({nombre:CAT,desc:'Lo que hacen las barras (se crea desde Cajas)'});
+  openMov(); setTipo('ingreso');
+  document.getElementById('mImporte').value=falta;
+  const fs=document.getElementById('mFiesta'); if(k.fiestaId && [...fs.options].some(o=>o.value===k.fiestaId)) fs.value=k.fiestaId;
+  if(k.fecha && k.fecha<=hoyYMD()) document.getElementById('mFecha').value=k.fecha;
+  setMovCat(CAT); document.getElementById('mConcepto').value='Barra · '+(k.nombre||'caja');
+  document.getElementById('mMetodo').value='Efectivo'; repPartes=[]; syncMetodoUI();
+  state.cjLink=k.id;
 }
 
 /* ============ LISTADOS (gente apuntada a comidas y cenas, y cobro en la plaza) ============ */
