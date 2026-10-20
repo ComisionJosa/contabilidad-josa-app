@@ -288,6 +288,22 @@
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  /* ---- Cobro con cambio (Listados) ---- */
+  .co-modal{max-width:440px}
+  .co-step{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
+  .co-step .ctl{display:flex;align-items:center;gap:8px} .co-step .ctl button{width:40px;height:40px;font-size:20px;font-weight:800;padding:0;border-radius:10px}
+  .co-step .ctl b{min-width:28px;text-align:center;font-size:20px}
+  .co-total{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:6px 0 10px}
+  .co-total b{font-size:28px}
+  .co-da input{width:100%;font-size:26px;font-weight:800;text-align:center;padding:10px}
+  .co-rap{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .co-rap button{flex:1 1 60px;padding:10px 6px;font-size:16px;font-weight:700}
+  .co-cambio{text-align:center;border-radius:14px;padding:12px;margin-top:6px;background:var(--panel2);border:1px solid var(--line)}
+  .co-cambio .l{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+  .co-cambio .v{font-size:34px;font-weight:900;line-height:1.15}
+  .co-cambio.ok{border-color:var(--green)} .co-cambio.ok .v{color:var(--green)}
+  .co-cambio.falta{border-color:#e05252} .co-cambio.falta .v{color:#ff9b9b}
+  .co-cambio .det{font-size:13px;color:var(--muted);margin-top:2px}
   /* ---- Cajas (arqueo) ---- */
   .cj-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:8px 14px;align-items:center}
   .cj-card h3{margin:0;font-size:16px} .cj-card .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
@@ -751,6 +767,17 @@
   </div>
   <div class="field"><label>Nota (opcional)</label><input type="text" id="apNota" placeholder="Ej: uno es celíaco, vienen a las 15:00…"></div>
   <div class="modal-actions"><button class="ghost" onclick="closeModal('apuntadoModal')">Cancelar</button><button class="primary" id="apGuardar">Guardar</button></div>
+</div></div>
+
+<!-- MODAL COBRO (calcula el cambio) -->
+<div class="modal-bg" id="cobroModal"><div class="modal co-modal">
+  <h3 id="coTitulo">💶 Cobrar</h3>
+  <div id="coPasos"></div>
+  <div class="co-total"><span id="coTotTxt">Total a cobrar</span><b id="coTotal">0 €</b></div>
+  <div class="co-da"><label class="muted" style="font-size:13px">¿Cuánto te da?</label><input type="number" id="coDa" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
+  <div class="co-rap" id="coRap"></div>
+  <div class="co-cambio" id="coCambio"></div>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('cobroModal')">Cancelar</button><button class="primary" id="coOk">✅ Cobrado</button></div>
 </div></div>
 
 <!-- MODAL PEGAR LISTA -->
@@ -2845,17 +2872,65 @@ function lsAdd(){
 function lsDot(gid,t,i){
   const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g||soloLectura) return;
   const k=t==='A'?'pagA':'pagN', cur=lsPag(l,g)[t];
-  g[k]=i<cur?i:i+1;
-  if(g[k]>cur){ g.pagadoEl=new Date().toISOString(); }
-  save(); renderListados();
+  if(i>=cur){ lsCobrar(gid, t==='A'?i+1-cur:0, t==='N'?i+1-cur:0); return; }   // marcar como pagado → ventana de cobro
+  g[k]=i; save(); renderListados();
 }
 function lsTodo(gid){
   const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g||soloLectura) return;
   const x=lsGrupo(l,g), p=lsPag(l,g);
   if(p.A+p.N>=x.A+x.N){ if(!confirm(`¿Quitar el pago de «${g.nombre}»?`)) return; g.pagA=0; g.pagN=0; }
-  else { g.pagA=x.A; g.pagN=x.N; g.pagadoEl=new Date().toISOString(); }
+  else { lsCobrar(gid, x.A-p.A, x.N-p.N); return; }
   save(); renderListados();
 }
+/* ---- Ventana de cobro: total, cuánto te da y cuánto hay que devolver ---- */
+let coSt=null;
+function lsCobrar(gid,a,n){
+  const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g||soloLectura) return;
+  const x=lsGrupo(l,g), p=lsPag(l,g);
+  coSt={gid, maxA:x.A-p.A, maxN:x.N-p.N, a:Math.min(a,x.A-p.A), n:Math.min(n,x.N-p.N)};
+  document.getElementById('coTitulo').textContent='💶 Cobrar a '+(g.nombre||'');
+  document.getElementById('coDa').value='';
+  coPintar(); showModal('cobroModal');
+  setTimeout(()=>{ const i=document.getElementById('coDa'); i.focus(); },60);
+}
+function coTotal(){ const l=lsListado(); return Math.round((coSt.a*lsPrecio(l,'A')+coSt.n*lsPrecio(l,'N'))*100)/100; }
+function coPaso(t,d){ const k=t==='A'?'a':'n', m=t==='A'?'maxA':'maxN'; coSt[k]=Math.max(0,Math.min(coSt[m],coSt[k]+d)); coPintar(); }
+function coPintar(){
+  const l=lsListado(), ninos=l.conNinos&&coSt.maxN>0;
+  const paso=(t,lbl,v,max,pr)=>`<div class="co-step"><span>${lbl} <span class="muted" style="font-size:12.5px">(${money(pr)} · quedan ${max})</span></span><span class="ctl"><button class="ghost" onclick="coPaso('${t}',-1)">−</button><b>${v}</b><button class="ghost" onclick="coPaso('${t}',1)">+</button></span></div>`;
+  document.getElementById('coPasos').innerHTML=(coSt.maxA>0?paso('A',l.conNinos?'Adultos que pagan':'Personas que pagan',coSt.a,coSt.maxA,lsPrecio(l,'A')):'')+(ninos?paso('N','Niños que pagan',coSt.n,coSt.maxN,lsPrecio(l,'N')):'');
+  const tot=coTotal(), per=coSt.a+coSt.n;
+  document.getElementById('coTotTxt').textContent=`Total a cobrar (${per} persona${per===1?'':'s'})`;
+  document.getElementById('coTotal').textContent=money(tot);
+  // botones rápidos: justo y billetes redondos por encima del total
+  const sug=[]; [5,10,20,50,100,200].forEach(b=>{ const v=Math.ceil(tot/b)*b; if(v>tot && !sug.includes(v) && sug.length<4) sug.push(v); });
+  document.getElementById('coRap').innerHTML=`<button class="ghost" onclick="coDar(${tot})">Justo</button>`+sug.sort((a,b)=>a-b).map(v=>`<button class="ghost" onclick="coDar(${v})">${v} €</button>`).join('');
+  coCambio();
+}
+function coDar(v){ document.getElementById('coDa').value=v; coCambio(); }
+function coDesglose(c){
+  let r=Math.round(c*100); const out=[];
+  [5000,2000,1000,500,200,100,50,20,10,5,2,1].forEach(d=>{ const k=Math.floor(r/d); if(k){ out.push(k+'×'+(d>=100?(d/100)+' €':d+' cént')); r-=k*d; } });
+  return out.join(' + ');
+}
+function coCambio(){
+  const tot=coTotal(), v=document.getElementById('coDa').value, el=document.getElementById('coCambio');
+  if(v===''){ el.className='co-cambio'; el.innerHTML='<div class="l">Cambio a devolver</div><div class="v">—</div><div class="det">Escribe cuánto te da o pulsa un botón</div>'; return; }
+  const da=Math.round((parseFloat(v)||0)*100)/100, c=Math.round((da-tot)*100)/100;
+  if(c<0){ el.className='co-cambio falta'; el.innerHTML=`<div class="l">Faltan</div><div class="v">${money(-c)}</div>`; }
+  else { el.className='co-cambio ok'; el.innerHTML=`<div class="l">Devuélvele</div><div class="v">${money(c)}</div>${c>0?`<div class="det">${coDesglose(c)}</div>`:'<div class="det">Justo, no hay cambio</div>'}`; }
+}
+document.getElementById('coDa').oninput=coCambio;
+document.getElementById('coDa').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('coOk').click(); } };
+document.getElementById('coOk').onclick=()=>{
+  const l=lsListado(); const g=l&&coSt&&(l.gente||[]).find(x=>x.id===coSt.gid); if(!g) return;
+  if(coSt.a+coSt.n<1){ alert('Elige cuántas personas pagan.'); return; }
+  const v=document.getElementById('coDa').value;
+  if(v!=='' && (parseFloat(v)||0)+0.001<coTotal() && !confirm('Te da menos de lo que cuesta. ¿Marcarlo como cobrado igualmente?')) return;
+  const p=lsPag(l,g); g.pagA=p.A+coSt.a; g.pagN=p.N+coSt.n; g.pagadoEl=new Date().toISOString();
+  save(); closeModal('cobroModal'); renderListados();
+  avisoBreve('✅ Cobrado: '+money(coTotal())+(v!==''&&parseFloat(v)>coTotal()?' · cambio '+money(parseFloat(v)-coTotal()):''));
+};
 function openListado(id){
   const c=activa(); if(!c) return; if(c.cerrada){ alert('🔒 Comisión cerrada.'); return; }
   lsEditId=id||null; const l=id?(db.listados||[]).find(x=>x.id===id):null;
