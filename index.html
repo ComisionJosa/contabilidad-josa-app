@@ -1357,7 +1357,7 @@ function renderResumen(){
     <div class="card stat"><span class="k">Saldo inicial</span><span class="v money">${money(c.saldoInicial)}</span></div>
     <div class="card stat"><span class="k">Ingresos</span><span class="v money pos">${money(t.ing)}</span></div>
     <div class="card stat"><span class="k">Gastos</span><span class="v money neg">${money(t.gas)}</span></div>
-    <div class="card stat"><span class="k">💰 Caja actual</span><span class="v money ${t.caja>=0?'pos':'neg'}">${money(t.caja)}</span></div>
+    <div class="card stat"><span class="k">💰 Dinero de la comisión</span><span class="v money ${t.caja>=0?'pos':'neg'}">${money(t.caja)}</span>${(()=>{ const fs=fondosDe(c.id).filter(f=>!f.devuelto); const tf=fs.reduce((x,f)=>x+fdImporte(f),0); return tf>0?`<span class="muted" style="font-size:12.5px;margin-top:4px;cursor:pointer" onclick="goTab('cajas')" title="Ver en Cajas">👜 ${money(tf)} en el fondo de cambio · 🏦 ${money(t.caja-tf)} el resto</span>`:''; })()}</div>
   </div>
   ${t.pendiente>0?`<div class="banner warn">⏳ Pendiente de pagar: <b>${money(t.pendiente)}</b> — reservado pero aún NO descontado de la caja.</div>`:''}
   <div class="section-title"><h2>Balance por fiesta</h2></div>
