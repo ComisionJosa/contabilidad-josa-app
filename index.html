@@ -304,7 +304,6 @@
   .cj-tbl tfoot td{font-weight:800;font-size:15px;border-bottom:0;padding-top:8px}
   .cj-res{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:10px}
   .cj-res div{display:flex;justify-content:space-between;gap:10px;padding:3px 0} .cj-res .tot{border-top:1px solid var(--line);margin-top:4px;padding-top:7px;font-size:17px;font-weight:800;color:var(--green)}
-  .cj-pago{display:flex;gap:6px;margin-bottom:6px} .cj-pago input[type=text]{flex:1} .cj-pago input[type=number]{width:100px}
   .cj-help{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin-bottom:12px}
   .cj-help summary{cursor:pointer;font-weight:700;padding:8px 0} .cj-help ol{margin:4px 0 10px;padding-left:20px;line-height:1.55}
   @media(max-width:600px){ .cj-tbl input{width:60px} .cj-tbl small{min-width:0;display:block;margin:2px 0 0} .cj-num{min-width:0;flex:1 1 40%} }
@@ -684,9 +683,6 @@
   <p class="muted" style="margin:4px 0 6px;font-size:13px">Pon <b>cuántos</b> hay de cada uno (no el dinero): el programa suma solo.</p>
   <table class="cj-tbl"><thead><tr><th></th><th>🟢 Al empezar (cambio)</th><th>🔴 Al cerrar</th></tr></thead><tbody id="cjFilas"></tbody>
     <tfoot><tr><td>Total</td><td id="cjTotIni"></td><td id="cjTotFin"></td></tr></tfoot></table>
-  <b>🧾 Pagos hechos con dinero de esta caja</b> <span class="muted" style="font-size:13px">(hielo, propinas, lo que sea; luego apúntalos como gasto en efectivo)</span>
-  <div id="cjPagos" style="margin-top:6px"></div>
-  <button class="ghost" onclick="cjAddPago()" style="margin-bottom:10px">+ Añadir pago</button>
   <div id="cjListadosW"><b>🎟️ ¿Entró aquí el dinero de algún listado?</b> <span class="muted" style="font-size:13px">(tickets de comidas/cenas cobrados en esta caja: ya se apuntan desde Listados)</span>
     <div id="cjListados" style="margin:6px 0 4px"></div></div>
   <div class="cj-res" id="cjRes"></div>
@@ -2475,12 +2471,11 @@ function cjTotal(o){ return CJ_DEN.reduce((t,d)=>t+cjUds(o,d)*d,0)/100; }
 function cajasDe(cid){ return (db.cajas||[]).filter(k=>k.comisionId===cid); }
 function cjCalc(k){
   const ini=cjTotal(k.inicio), fin=cjTotal(k.fin), contada=fin>0;
-  const pagos=(k.pagos||[]).reduce((t,p)=>t+(parseFloat(p.importe)||0),0);
   const tickets=(k.listados||[]).reduce((t,id)=>{ const l=(db.listados||[]).find(x=>x.id===id); return t+(l?lsTot(l).cobrado:0); },0);
-  const recaudado=fin-ini+pagos, barra=Math.round((recaudado-tickets)*100)/100;
+  const recaudado=fin-ini, barra=Math.round((recaudado-tickets)*100)/100;
   const apuntado=db.movimientos.filter(m=>m.cajaId===k.id).reduce((t,m)=>t+(+m.importe||0),0);
   const estado=!contada?'abierta':(apuntado>0&&Math.abs(apuntado-barra)<0.01?'apuntada':'contada');
-  return {ini,fin,pagos,tickets,recaudado,barra,apuntado,contada,estado};
+  return {ini,fin,tickets,recaudado,barra,apuntado,contada,estado};
 }
 const CJ_EST={abierta:'🟢 Abierta · falta contar al cerrar',contada:'🔴 Contada · falta apuntar el ingreso',apuntada:'✅ Apuntada en Movimientos'};
 function renderCajas(){
@@ -2491,10 +2486,10 @@ function renderCajas(){
   let html=`<div class="section-title"><h2>💰 Cajas</h2>${ro?'':'<button class="primary" onclick="openCaja()">+ Nueva caja</button>'}</div>
   <details class="cj-help" ${ks.length?'':'open'}><summary>❓ ¿Cómo se lleva una caja?</summary><ol>
     <li><b>Al empezar</b>: cuenta el cambio que metes (cuántos billetes y monedas de cada) y apúntalo en «Al empezar». No es un gasto: es dinero de la comisión que cambia de sitio.</li>
-    <li><b>Durante la noche</b>: si se paga algo con dinero de la caja (hielo, una propina…), apúntalo en un papel.</li>
-    <li><b>Al cerrar</b>: vuelve a contar todo y apúntalo en «Al cerrar». Añade los pagos hechos con la caja.</li>
+    <li><b>Durante la noche</b>: con el dinero de la caja no se paga nada; solo se cobra y se da la vuelta.</li>
+    <li><b>Al cerrar</b>: vuelve a contar todo y apúntalo en «Al cerrar».</li>
     <li>Si en esa caja también se cobraron tickets de una comida o cena, márcalo: ese dinero ya se apunta desde 📋 Listados.</li>
-    <li>El programa te dice <b>lo que ha hecho la barra</b> = al cerrar − al empezar + pagos − tickets. Pulsa <b>💶 Apuntar ingreso</b> y queda en Movimientos.</li>
+    <li>El programa te dice <b>lo que ha hecho la barra</b> = al cerrar − al empezar − tickets. Pulsa <b>💶 Apuntar ingreso</b> y queda en Movimientos.</li>
     <li>El cambio del principio se aparta para la siguiente vez (puedes copiarlo en la caja nueva) o vuelve al banco.</li></ol></details>`;
   if(!ks.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ninguna caja.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openCaja()">+ Nueva caja</button>'}</div>`; return; }
   const tot=ks.reduce((t,k)=>{ const r=cjCalc(k); if(r.contada){ t.barra+=r.barra; t.n++; } return t; },{barra:0,n:0});
@@ -2506,7 +2501,6 @@ function renderCajas(){
       <div class="cj-nums">
         <div class="cj-num"><div class="l">🟢 Cambio inicial</div><div class="v">${money(r.ini)}</div></div>
         <div class="cj-num"><div class="l">🔴 Al cerrar</div><div class="v">${r.contada?money(r.fin):'—'}</div></div>
-        ${r.pagos?`<div class="cj-num"><div class="l">🧾 Pagos con caja</div><div class="v">${money(r.pagos)}</div></div>`:''}
         ${r.tickets?`<div class="cj-num"><div class="l">🎟️ Tickets</div><div class="v">${money(r.tickets)}</div></div>`:''}
         <div class="cj-num barra"><div class="l">🍺 Barra</div><div class="v">${r.contada?money(r.barra):'—'}</div></div>
       </div>
@@ -2520,8 +2514,8 @@ function renderCajas(){
 function openCaja(id){
   const c=activa(); if(!c) return; if(c.cerrada){ alert('🔒 Comisión cerrada.'); return; }
   cjEditId=id||null; const k=id?(db.cajas||[]).find(x=>x.id===id):null;
-  cjDraft=JSON.parse(JSON.stringify(k||{inicio:{},fin:{},pagos:[],listados:[]}));
-  ['inicio','fin'].forEach(x=>{ if(!cjDraft[x]) cjDraft[x]={}; }); if(!Array.isArray(cjDraft.pagos)) cjDraft.pagos=[]; if(!Array.isArray(cjDraft.listados)) cjDraft.listados=[];
+  cjDraft=JSON.parse(JSON.stringify(k||{inicio:{},fin:{},listados:[]}));
+  ['inicio','fin'].forEach(x=>{ if(!cjDraft[x]) cjDraft[x]={}; }); if(!Array.isArray(cjDraft.listados)) cjDraft.listados=[];
   document.getElementById('cajaTitulo').textContent=id?'💰 '+(k.nombre||'Caja'):'💰 Nueva caja';
   const fs=fiestasOrden(c);
   document.getElementById('cjFiesta').innerHTML='<option value="">(sin fiesta)</option>'+fs.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('');
@@ -2534,7 +2528,7 @@ function openCaja(id){
   cp.innerHTML='<option value="">📋 Copiar el cambio de otra caja…</option>'+otras.map(x=>`<option value="${x.id}">${esc(x.nombre||'Caja')}${x.fecha?' ('+fmtFecha(x.fecha)+')':''} · ${money(cjTotal(x.inicio))}</option>`).join('');
   cp.style.display=otras.length?'':'none';
   cp.onchange=()=>{ const o=(db.cajas||[]).find(x=>x.id===cp.value); if(o){ cjDraft.inicio=JSON.parse(JSON.stringify(o.inicio||{})); cjPintarFilas(); } cp.value=''; };
-  cjPintarFilas(); cjPintarPagos(); cjPintarListados();
+  cjPintarFilas(); cjPintarListados();
   showModal('cajaModal');
 }
 function cjPintarFilas(){
@@ -2543,12 +2537,6 @@ function cjPintarFilas(){
   document.querySelectorAll('#cjFilas input').forEach(i=>i.oninput=()=>{ const v=Math.max(0,parseInt(i.value)||0); if(v) cjDraft[i.dataset.k][i.dataset.d]=v; else delete cjDraft[i.dataset.k][i.dataset.d]; cjActualizar(); });
   cjActualizar();
 }
-function cjPintarPagos(){
-  document.getElementById('cjPagos').innerHTML=cjDraft.pagos.map((p,i)=>`<div class="cj-pago"><input type="text" data-i="${i}" data-f="concepto" value="${esc(p.concepto||'')}" placeholder="Concepto (ej: 10 sacos de hielo)"><input type="number" min="0" step="0.01" data-i="${i}" data-f="importe" value="${p.importe??''}" placeholder="€"><button class="icon-btn danger" onclick="cjQuitarPago(${i})">✕</button></div>`).join('');
-  document.querySelectorAll('#cjPagos input').forEach(i=>i.oninput=()=>{ cjDraft.pagos[+i.dataset.i][i.dataset.f]=i.value; cjActualizar(); });
-}
-function cjAddPago(){ cjDraft.pagos.push({concepto:'',importe:''}); cjPintarPagos(); cjActualizar(); const ins=document.querySelectorAll('#cjPagos input[type=text]'); if(ins.length) ins[ins.length-1].focus(); }
-function cjQuitarPago(i){ cjDraft.pagos.splice(i,1); cjPintarPagos(); cjActualizar(); }
 function cjPintarListados(){
   const c=activa(), ls=listadosDe(c.id).filter(l=>lsTot(l).cobrado>0||cjDraft.listados.includes(l.id));
   document.getElementById('cjListadosW').style.display=ls.length?'':'none';
@@ -2563,18 +2551,16 @@ function cjActualizar(){
     ? `<div><span>🟢 Cambio al empezar</span><b>${money(r.ini)}</b></div><div class="muted" style="display:block">Cuando cerréis, vuelve aquí y apunta lo que hay en «Al cerrar».</div>`
     : `<div><span>🔴 Al cerrar</span><b>${money(r.fin)}</b></div>
        <div><span>− Cambio que se metió al empezar</span><b>${money(-r.ini)}</b></div>
-       ${r.pagos?`<div><span>+ Pagos hechos con la caja</span><b>${money(r.pagos)}</b></div>`:''}
        <div><span>= Recaudado en la caja</span><b>${money(r.recaudado)}</b></div>
        ${r.tickets?`<div><span>− Tickets de listados (ya apuntados aparte)</span><b>${money(-r.tickets)}</b></div>`:''}
        <div class="tot"><span>🍺 Ha hecho la barra</span><span>${money(r.barra)}</span></div>
-       ${r.barra<0?'<div style="color:#ff9b9b;display:block">⚠️ Sale negativo: revisa el recuento o los pagos.</div>':''}`;
+       ${r.barra<0?'<div style="color:#ff9b9b;display:block">⚠️ Sale negativo: revisa el recuento.</div>':''}`;
 }
 document.getElementById('cjGuardar').onclick=()=>{
   const c=activa(); if(!c||!cjDraft) return;
   const fid=document.getElementById('cjFiesta').value, f=fiestasOrden(c).find(x=>x.id===fid);
   const nombre=document.getElementById('cjNombre').value.trim()||('Caja'+(f?' '+f.nombre:''));
-  cjDraft.pagos=cjDraft.pagos.filter(p=>(p.concepto||'').trim()||parseFloat(p.importe)).map(p=>({concepto:(p.concepto||'').trim(),importe:Math.round((parseFloat(p.importe)||0)*100)/100}));
-  const data={nombre,fiestaId:fid,fecha:document.getElementById('cjFecha').value,nota:document.getElementById('cjNota').value.trim(),inicio:cjDraft.inicio,fin:cjDraft.fin,pagos:cjDraft.pagos,listados:cjDraft.listados,mod:new Date().toISOString()};
+  const data={nombre,fiestaId:fid,fecha:document.getElementById('cjFecha').value,nota:document.getElementById('cjNota').value.trim(),inicio:cjDraft.inicio,fin:cjDraft.fin,listados:cjDraft.listados,mod:new Date().toISOString()};
   if(cjEditId) Object.assign(db.cajas.find(x=>x.id===cjEditId),data);
   else db.cajas.push(Object.assign({id:uid(),comisionId:c.id,creado:new Date().toISOString()},data));
   save(); closeModal('cajaModal'); render();
