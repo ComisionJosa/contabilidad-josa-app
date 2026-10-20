@@ -278,7 +278,7 @@
   body.solo-lectura .adj-no{display:none !important}
   body.solo-lectura #btnAjustes{display:none !important}
   body.solo-lectura [onclick*="openTarea"], body.solo-lectura [onclick*="delTarea"]{display:none !important}
-  body.solo-lectura [onclick*="openListado"], body.solo-lectura [onclick*="openCaja"], body.solo-lectura [onclick*="delCaja"], body.solo-lectura [onclick*="cjIngreso"], body.solo-lectura [onclick*="delListado"], body.solo-lectura [onclick*="openApuntado"], body.solo-lectura [onclick*="delApuntado"], body.solo-lectura [onclick*="lsPegar"], body.solo-lectura [onclick*="lsIngreso"], body.solo-lectura .ls-add{display:none !important}
+  body.solo-lectura [onclick*="openListado"], body.solo-lectura [onclick*="openCaja"], body.solo-lectura [onclick*="delCaja"], body.solo-lectura [onclick*="cjIngreso"], body.solo-lectura [onclick*="openFondo"], body.solo-lectura [onclick*="delFondo"], body.solo-lectura [onclick*="fdDevolver"], body.solo-lectura [onclick*="delListado"], body.solo-lectura [onclick*="openApuntado"], body.solo-lectura [onclick*="delApuntado"], body.solo-lectura [onclick*="lsPegar"], body.solo-lectura [onclick*="lsIngreso"], body.solo-lectura .ls-add{display:none !important}
   body.sin-conectar header button, body.sin-conectar header .comi-pick{display:none !important}
   body.solo-lectura header [onclick*="guia.html"]{display:none !important}
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
@@ -304,6 +304,16 @@
   .cj-tbl tfoot td{font-weight:800;font-size:15px;border-bottom:0;padding-top:8px}
   .cj-res{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:10px}
   .cj-res div{display:flex;justify-content:space-between;gap:10px;padding:3px 0} .cj-res .tot{border-top:1px solid var(--line);margin-top:4px;padding-top:7px;font-size:17px;font-weight:800;color:var(--green)}
+  .fd-card{background:linear-gradient(135deg,#1c2a3c,#1a2433);border:1px solid #35506e;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+  .fd-card h3{margin:0;font-size:16px} .fd-card .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .fd-card.devuelto{background:var(--panel);border-color:var(--line);opacity:.7;padding:8px 14px}
+  .fd-bolsa{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 8px}
+  .fd-bolsa .cj-num.bolsa{border-color:var(--acc)} .fd-bolsa .cj-num.bolsa .v{color:var(--acc)}
+  .fd-rep{font-size:13px;color:var(--muted)}
+  .cj-tipo{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:10px} .cj-tipo button{border:0;border-radius:0;padding:8px 14px;background:var(--panel2)}
+  .cj-tipo button.on{background:var(--acc);color:#1a1205;font-weight:700}
+  .cj-est.cuadra{background:#123824;color:#8ff0b5} .cj-est.descuadre{background:#4a1f1f;color:#ffb0b0}
+  .cj-num.ok{border-color:var(--green)} .cj-num.ok .v{color:var(--green)} .cj-num.mal{border-color:#e05252} .cj-num.mal .v{color:#ff9b9b}
   .cj-help{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin-bottom:12px}
   .cj-help summary{cursor:pointer;font-weight:700;padding:8px 0} .cj-help ol{margin:4px 0 10px;padding-left:20px;line-height:1.55}
   @media(max-width:600px){ .cj-tbl input{width:60px} .cj-tbl small{min-width:0;display:block;margin:2px 0 0} .cj-num{min-width:0;flex:1 1 40%} }
@@ -671,11 +681,13 @@
 <!-- MODAL CAJA (arqueo) -->
 <div class="modal-bg" id="cajaModal"><div class="modal" style="max-width:760px">
   <h3 id="cajaTitulo">Nueva caja</h3>
+  <div class="cj-tipo" id="cjTipo"><button data-t="tickets">🎟️ Cobro de tickets</button><button data-t="barra">🍺 Barra</button></div>
   <div class="field"><label>Nombre de la caja</label><input type="text" id="cjNombre" placeholder="Ej: Barra Halloween (sábado noche)"></div>
   <div class="field two">
     <div><label>Fiesta</label><select id="cjFiesta"></select></div>
     <div><label>Día</label><input type="date" id="cjFecha"></div>
   </div>
+  <div class="field"><label>El cambio sale de</label><select id="cjFondo"></select></div>
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
     <b>💶 Billetes y monedas</b>
     <select id="cjCopiar" style="max-width:300px"></select>
@@ -683,11 +695,29 @@
   <p class="muted" style="margin:4px 0 6px;font-size:13px">Pon <b>cuántos</b> hay de cada uno (no el dinero): el programa suma solo.</p>
   <table class="cj-tbl"><thead><tr><th></th><th>🟢 Al empezar (cambio)</th><th>🔴 Al cerrar</th></tr></thead><tbody id="cjFilas"></tbody>
     <tfoot><tr><td>Total</td><td id="cjTotIni"></td><td id="cjTotFin"></td></tr></tfoot></table>
-  <div id="cjListadosW"><b>🎟️ ¿Entró aquí el dinero de algún listado?</b> <span class="muted" style="font-size:13px">(tickets de comidas/cenas cobrados en esta caja: ya se apuntan desde Listados)</span>
+  <div id="cjListadosW"><b id="cjListTit"></b> <span class="muted" style="font-size:13px" id="cjListSub"></span>
     <div id="cjListados" style="margin:6px 0 4px"></div></div>
   <div class="cj-res" id="cjRes"></div>
   <div class="field" style="margin-top:10px"><label>Nota (opcional)</label><input type="text" id="cjNota" placeholder="Quién la ha contado, incidencias…"></div>
   <div class="modal-actions"><button class="ghost" onclick="closeModal('cajaModal')">Cancelar</button><button class="primary" id="cjGuardar">Guardar</button></div>
+</div></div>
+
+<!-- MODAL FONDO DE CAMBIO -->
+<div class="modal-bg" id="fondoModal"><div class="modal" style="max-width:560px">
+  <h3 id="fondoTitulo">👜 Fondo de cambio</h3>
+  <p class="muted" style="margin-top:-4px;font-size:13px">El dinero que se saca del banco para tener cambio. <b>No es gasto ni ingreso</b>: de aquí se reparte el cambio a cada caja y al final vuelve al banco.</p>
+  <div class="field"><label>Nombre</label><input type="text" id="fdNombre" placeholder="Ej: Cambio Halloween"></div>
+  <div class="field two">
+    <div><label>Fiesta</label><select id="fdFiesta"></select></div>
+    <div><label>Día que se saca del banco</label><input type="date" id="fdFecha"></div>
+  </div>
+  <b>💶 Lo que da el banco</b> <span class="muted" style="font-size:13px">(cuántos de cada; si no lo sabes, pon solo el total abajo)</span>
+  <table class="cj-tbl"><tbody id="fdFilas"></tbody><tfoot><tr><td>Total</td><td id="fdTot"></td></tr></tfoot></table>
+  <div class="field two">
+    <div><label>Total sacado (€)</label><input type="number" id="fdImporte" min="0" step="0.01" placeholder="Ej: 1000"></div>
+    <div><label>Nota (opcional)</label><input type="text" id="fdNota" placeholder="Quién lo guarda…"></div>
+  </div>
+  <div class="modal-actions"><button class="ghost" onclick="closeModal('fondoModal')">Cancelar</button><button class="primary" id="fdGuardar">Guardar</button></div>
 </div></div>
 
 <!-- MODAL LISTADO -->
@@ -895,6 +925,7 @@ function normaliza(d){
   d.tareas = Array.isArray(d.tareas)?d.tareas:[];
   d.listados = Array.isArray(d.listados)?d.listados:[];
   d.cajas = Array.isArray(d.cajas)?d.cajas:[];
+  d.fondos = Array.isArray(d.fondos)?d.fondos:[];
   d.stockCats = Array.isArray(d.stockCats)?d.stockCats:[];
   // stock ahora es POR COMISIÓN
   d.comisiones.forEach(c=>{ if(!Array.isArray(c.stock)) c.stock=[]; });
@@ -2103,8 +2134,8 @@ function delMov(id){
   save(); render();
 }
 /* ============ PAPELERA (unificada: movimientos, contactos, categorías, comisiones) ============ */
-const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝',tarea:'✅',listado:'📋',apuntado:'🙋',caja:'💰'};
-const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo',tarea:'Tarea',listado:'Listado de comida/cena',apuntado:'Apuntado a un listado',caja:'Caja (arqueo)'};
+const PAP_ICON={movimiento:'💶',contacto:'📇',categoria:'🏷️',comision:'🗂️',stock:'📦',stockmov:'🔁',adjunto:'📎',nota:'📝',premio:'🏆',prestamo:'🤝',tarea:'✅',listado:'📋',apuntado:'🙋',caja:'💰',fondo:'👜'};
+const PAP_LBL={movimiento:'Movimiento',contacto:'Contacto',categoria:'Categoría',comision:'Comisión',stock:'Artículo de stock',stockmov:'Apunte de stock',adjunto:'Documento adjunto',nota:'Anotación',premio:'Premio de concurso',prestamo:'Préstamo',tarea:'Tarea',listado:'Listado de comida/cena',apuntado:'Apuntado a un listado',caja:'Caja (arqueo)',fondo:'Fondo de cambio'};
 function papeleraPush(tipo,titulo,payload){ db.papelera.push({id:uid(),tipo,titulo:titulo||'',deletedAt:new Date().toISOString(),payload}); }
 function fmtFechaHora(iso){ if(!iso)return ''; const s=String(iso); const d=s.slice(0,10).split('-'); return (d.length===3?`${d[2]}/${d[1]}/${d[0]}`:s.slice(0,10))+' '+s.slice(11,16); }
 function openPapelera(){ paintPapelera(); showModal('papeleraModal'); }
@@ -2133,6 +2164,7 @@ function restaurarItem(pid){
   else if(it.tipo==='tarea'){ db.tareas.push(it.payload); }
   else if(it.tipo==='listado'){ db.listados.push(it.payload); }
   else if(it.tipo==='caja'){ db.cajas.push(it.payload); }
+  else if(it.tipo==='fondo'){ db.fondos.push(it.payload); }
   else if(it.tipo==='apuntado'){ const p=it.payload||{}; const l=db.listados.find(x=>x.id===p.listadoId); if(!l){ alert('No se puede restaurar: el listado de esta persona ya no existe.'); return; } if(!Array.isArray(l.gente))l.gente=[]; l.gente.push(p.g); }
   else if(it.tipo==='categoria'){ const nm=it.payload.nombre; if(catNames().some(c=>normName(c)===normName(nm))){ alert('Ya existe una categoría "'+nm+'". No se restaura para no duplicar.'); return; } db.categorias.push(it.payload); }
   else if(it.tipo==='comision'){ const p=it.payload; if(db.comisiones.some(c=>c.id===p.comision.id)){ alert('Esa comisión ya existe.'); return; } db.comisiones.push(p.comision); (p.movimientos||[]).forEach(m=>db.movimientos.push(m)); }
@@ -2462,60 +2494,146 @@ function heredarTareas(nueva){
   return n;
 }
 
-/* ============ CAJAS (arqueo: cambio al empezar, recuento al cerrar → ingreso de barra) ============ */
-let cjEditId=null, cjDraft=null;
+/* ============ CAJAS: fondo de cambio (sale del banco, no es gasto) → cambio de cada caja → recuento al cerrar ============ */
+let cjEditId=null, cjDraft=null, fdEditId=null, fdDraft=null;
 const CJ_DEN=[50000,20000,10000,5000,2000,1000,500,200,100,50,20,10,5,2,1];   // en céntimos
 function cjDenTxt(c){ return c>=100?(c/100)+' €':c+' cént'; }
 function cjUds(o,d){ return Math.max(0,parseInt((o||{})[d])||0); }
 function cjTotal(o){ return CJ_DEN.reduce((t,d)=>t+cjUds(o,d)*d,0)/100; }
 function cajasDe(cid){ return (db.cajas||[]).filter(k=>k.comisionId===cid); }
-function cjCalc(k){
-  const ini=cjTotal(k.inicio), fin=cjTotal(k.fin), contada=fin>0;
-  const tickets=(k.listados||[]).reduce((t,id)=>{ const l=(db.listados||[]).find(x=>x.id===id); return t+(l?lsTot(l).cobrado:0); },0);
-  const recaudado=fin-ini, barra=Math.round((recaudado-tickets)*100)/100;
-  const apuntado=db.movimientos.filter(m=>m.cajaId===k.id).reduce((t,m)=>t+(+m.importe||0),0);
-  const estado=!contada?'abierta':(apuntado>0&&Math.abs(apuntado-barra)<0.01?'apuntada':'contada');
-  return {ini,fin,tickets,recaudado,barra,apuntado,contada,estado};
+function fondosDe(cid){ return (db.fondos||[]).filter(f=>f.comisionId===cid); }
+function fdImporte(f){ const t=cjTotal(f.desglose); return t>0?t:(parseFloat(f.importe)||0); }
+/* Lo que hay en la bolsa = lo sacado − el cambio de las cajas que siguen abiertas (al contar una caja, su cambio vuelve a la bolsa) */
+function fdCalc(f,excluirCajaId){
+  const abiertas=(db.cajas||[]).filter(k=>k.fondoId===f.id && k.id!==excluirCajaId && !(cjTotal(k.fin)>0));
+  const enCajas=abiertas.reduce((t,k)=>t+cjTotal(k.inicio),0), total=fdImporte(f);
+  return {total,enCajas,bolsa:Math.round((total-enCajas)*100)/100,abiertas};
 }
-const CJ_EST={abierta:'🟢 Abierta · falta contar al cerrar',contada:'🔴 Contada · falta apuntar el ingreso',apuntada:'✅ Apuntada en Movimientos'};
+function cjCalc(k){
+  const tipo=k.tipo||'barra', ini=cjTotal(k.inicio), fin=cjTotal(k.fin), contada=fin>0;
+  const tickets=(k.listados||[]).reduce((t,id)=>{ const l=(db.listados||[]).find(x=>x.id===id); return t+(l?lsTot(l).cobrado:0); },0);
+  const recaudado=Math.round((fin-ini)*100)/100, barra=tipo==='barra'?Math.round((recaudado-tickets)*100)/100:0;
+  const desc=tipo==='tickets'?Math.round((recaudado-tickets)*100)/100:0;
+  const apuntado=db.movimientos.filter(m=>m.cajaId===k.id).reduce((t,m)=>t+(+m.importe||0),0);
+  let estado='abierta';
+  if(contada) estado=tipo==='tickets'?(Math.abs(desc)<0.01?'cuadra':'descuadre'):(apuntado>0&&Math.abs(apuntado-barra)<0.01?'apuntada':'contada');
+  return {tipo,ini,fin,tickets,recaudado,barra,desc,apuntado,contada,estado};
+}
+const CJ_EST={abierta:'🟢 Abierta · falta contar al cerrar',contada:'🔴 Contada · falta apuntar el ingreso',apuntada:'✅ Apuntada en Movimientos',cuadra:'✅ Cuadra con los listados',descuadre:'⚠️ No cuadra'};
+const descTxt=d=>Math.abs(d)<0.01?'Cuadra':(d>0?'Sobran '+money(d):'Faltan '+money(-d));
 function renderCajas(){
   const c=activa(); if(!c){ content.innerHTML='<div class="empty">No hay comisiones.</div>'; return; }
   const ro=soloLectura||!!c.cerrada, fiestas=fiestasOrden(c);
   const fNom=fid=>{ const f=fiestas.find(x=>x.id===fid); return f?(EMO[f.tipo]||'🎪')+' '+f.nombre:'Sin fiesta'; };
   const ks=cajasDe(c.id).slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')||(b.creado||'').localeCompare(a.creado||''));
-  let html=`<div class="section-title"><h2>💰 Cajas</h2>${ro?'':'<button class="primary" onclick="openCaja()">+ Nueva caja</button>'}</div>
-  <details class="cj-help" ${ks.length?'':'open'}><summary>❓ ¿Cómo se lleva una caja?</summary><ol>
-    <li><b>Al empezar</b>: cuenta el cambio que metes (cuántos billetes y monedas de cada) y apúntalo en «Al empezar». No es un gasto: es dinero de la comisión que cambia de sitio.</li>
-    <li><b>Durante la noche</b>: con el dinero de la caja no se paga nada; solo se cobra y se da la vuelta.</li>
-    <li><b>Al cerrar</b>: vuelve a contar todo y apúntalo en «Al cerrar».</li>
-    <li>Si en esa caja también se cobraron tickets de una comida o cena, márcalo: ese dinero ya se apunta desde 📋 Listados.</li>
-    <li>El programa te dice <b>lo que ha hecho la barra</b> = al cerrar − al empezar − tickets. Pulsa <b>💶 Apuntar ingreso</b> y queda en Movimientos.</li>
-    <li>El cambio del principio se aparta para la siguiente vez (puedes copiarlo en la caja nueva) o vuelve al banco.</li></ol></details>`;
-  if(!ks.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ninguna caja.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openCaja()">+ Nueva caja</button>'}</div>`; return; }
-  const tot=ks.reduce((t,k)=>{ const r=cjCalc(k); if(r.contada){ t.barra+=r.barra; t.n++; } return t; },{barra:0,n:0});
-  if(tot.n) html+=`<div class="pill" style="margin-bottom:10px">💶 Barras contadas: <b>${money(tot.barra)}</b> en ${tot.n} caja${tot.n===1?'':'s'}</div>`;
-  html+=ks.map(k=>{ const r=cjCalc(k);
-    return `<div class="cj-card">
-      <div><h3>${esc(k.nombre||'Caja')}</h3><div class="meta">${esc(fNom(k.fiestaId))}${k.fecha?' · 📅 '+fmtFecha(k.fecha):''}${k.nota?' · '+esc(k.nota):''}</div></div>
-      <span class="cj-est ${r.estado}">${CJ_EST[r.estado]}</span>
-      <div class="cj-nums">
-        <div class="cj-num"><div class="l">🟢 Cambio inicial</div><div class="v">${money(r.ini)}</div></div>
-        <div class="cj-num"><div class="l">🔴 Al cerrar</div><div class="v">${r.contada?money(r.fin):'—'}</div></div>
-        ${r.tickets?`<div class="cj-num"><div class="l">🎟️ Tickets</div><div class="v">${money(r.tickets)}</div></div>`:''}
-        <div class="cj-num barra"><div class="l">🍺 Barra</div><div class="v">${r.contada?money(r.barra):'—'}</div></div>
+  const fds=fondosDe(c.id).slice().sort((a,b)=>(!!a.devuelto-!!b.devuelto)||(b.fecha||'').localeCompare(a.fecha||''));
+  let html=`<div class="section-title"><h2>💰 Cajas</h2>${ro?'':'<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="ghost" onclick="openFondo()">👜 Sacar fondo de cambio</button><button class="primary" onclick="openCaja()">+ Nueva caja</button></div>'}</div>
+  <details class="cj-help" ${ks.length||fds.length?'':'open'}><summary>❓ ¿Cómo se lleva el cambio y las cajas?</summary><ol>
+    <li><b>👜 Fondo de cambio</b>: lo que se saca del banco en billetes y monedas (p. ej. 1.000 €). <b>No es gasto ni ingreso</b>: es dinero de la comisión que cambia de sitio. Se guarda en una bolsa.</li>
+    <li><b>Cada caja</b> (la mesa de tickets de la plaza, la barra…) coge de la bolsa un poco de cambio para dar la vuelta: apúntalo en «Al empezar». El programa te dice cuánto queda en la bolsa.</li>
+    <li>Con el dinero de las cajas no se paga nada: solo se cobra y se da la vuelta.</li>
+    <li><b>Al cerrar</b>, cuenta lo que hay y apúntalo en «Al cerrar». El cambio vuelve a la bolsa para la siguiente caja.</li>
+    <li><b>🎟️ Caja de tickets</b>: lo cobrado (al cerrar − cambio) tiene que ser lo que marcan los 📋 Listados. El programa te dice si <b>cuadra</b>, sobra o falta. Los tickets se pasan a ingresos desde Listados.</li>
+    <li><b>🍺 Caja de barra</b>: al cerrar − cambio = <b>lo que ha hecho la barra</b>. Pulsa <b>💶 Apuntar ingreso de barra</b> y queda en Movimientos.</li>
+    <li>Al acabar las fiestas, el fondo vuelve al banco: pulsa <b>🏦 Devuelto al banco</b>.</li></ol></details>`;
+  // Fondos de cambio
+  html+=fds.map(f=>{ const r=fdCalc(f);
+    if(f.devuelto) return `<div class="fd-card devuelto"><b>👜 ${esc(f.nombre||'Fondo de cambio')}</b> · ${money(r.total)} · <span style="color:var(--green)">🏦 Devuelto al banco${f.devueltoEl?' el '+fmtFecha(f.devueltoEl):''}</span>${ro?'':` <button class="icon-btn ghost" style="margin-left:6px" onclick="fdDevolver('${f.id}')" title="Deshacer">↩️</button>`}</div>`;
+    return `<div class="fd-card">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:start">
+        <div><h3>👜 ${esc(f.nombre||'Fondo de cambio')}</h3><div class="meta">${esc(fNom(f.fiestaId))}${f.fecha?' · sacado del banco el '+fmtFecha(f.fecha):''}${f.nota?' · '+esc(f.nota):''}</div></div>
+        ${ro?'':`<div style="display:flex;gap:4px"><button class="icon-btn ghost" onclick="openFondo('${f.id}')" title="Editar">✏️</button><button class="icon-btn danger" onclick="delFondo('${f.id}')" title="Borrar">🗑️</button></div>`}
       </div>
+      <div class="fd-bolsa">
+        <div class="cj-num"><div class="l">🏦 Sacado del banco</div><div class="v">${money(r.total)}</div></div>
+        <div class="cj-num"><div class="l">💰 En cajas abiertas</div><div class="v">${money(r.enCajas)}</div></div>
+        <div class="cj-num bolsa"><div class="l">👜 Queda en la bolsa</div><div class="v">${money(r.bolsa)}</div></div>
+      </div>
+      ${r.abiertas.length?`<div class="fd-rep">En cajas: ${r.abiertas.map(k=>esc(k.nombre||'Caja')+' '+money(cjTotal(k.inicio))).join(' · ')}</div>`:'<div class="fd-rep">Todo el cambio está en la bolsa.</div>'}
+      ${r.bolsa<0?'<div style="color:#ff9b9b;margin-top:4px">⚠️ Se ha repartido más cambio del que se sacó: revisa el cambio de las cajas.</div>':''}
+      ${ro?'':`<div style="margin-top:8px"><button class="ghost" onclick="fdDevolver('${f.id}')">🏦 Devuelto al banco</button></div>`}
+    </div>`; }).join('');
+  if(!ks.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ninguna caja.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openCaja()">+ Nueva caja</button>'}</div>`; return; }
+  const tot=ks.reduce((t,k)=>{ const r=cjCalc(k); if(r.contada){ if(r.tipo==='barra'){ t.barra+=r.barra; t.nb++; } else { t.tic+=r.recaudado; t.nt++; } } return t; },{barra:0,nb:0,tic:0,nt:0});
+  if(tot.nb||tot.nt) html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">${tot.nb?`<span class="pill">🍺 Barras: <b>${money(tot.barra)}</b> (${tot.nb})</span>`:''}${tot.nt?`<span class="pill">🎟️ Tickets cobrados en cajas: <b>${money(tot.tic)}</b> (${tot.nt})</span>`:''}</div>`;
+  html+=ks.map(k=>{ const r=cjCalc(k), fd=(db.fondos||[]).find(f=>f.id===k.fondoId);
+    const nums=r.tipo==='tickets'
+      ? `<div class="cj-num"><div class="l">🟢 Cambio</div><div class="v">${money(r.ini)}</div></div>
+         <div class="cj-num"><div class="l">🔴 Al cerrar</div><div class="v">${r.contada?money(r.fin):'—'}</div></div>
+         <div class="cj-num"><div class="l">💶 Cobrado</div><div class="v">${r.contada?money(r.recaudado):'—'}</div></div>
+         <div class="cj-num"><div class="l">📋 Según listados</div><div class="v">${money(r.tickets)}</div></div>
+         ${r.contada?`<div class="cj-num ${Math.abs(r.desc)<0.01?'ok':'mal'}"><div class="l">⚖️ Cuadre</div><div class="v">${descTxt(r.desc)}</div></div>`:''}`
+      : `<div class="cj-num"><div class="l">🟢 Cambio</div><div class="v">${money(r.ini)}</div></div>
+         <div class="cj-num"><div class="l">🔴 Al cerrar</div><div class="v">${r.contada?money(r.fin):'—'}</div></div>
+         ${r.tickets?`<div class="cj-num"><div class="l">🎟️ Tickets</div><div class="v">${money(r.tickets)}</div></div>`:''}
+         <div class="cj-num barra"><div class="l">🍺 Barra</div><div class="v">${r.contada?money(r.barra):'—'}</div></div>`;
+    return `<div class="cj-card">
+      <div><h3>${r.tipo==='tickets'?'🎟️':'🍺'} ${esc(k.nombre||'Caja')}</h3><div class="meta">${esc(fNom(k.fiestaId))}${k.fecha?' · 📅 '+fmtFecha(k.fecha):''}${fd?' · cambio de 👜 '+esc(fd.nombre||'fondo'):''}${k.nota?' · '+esc(k.nota):''}</div></div>
+      <span class="cj-est ${r.estado}">${CJ_EST[r.estado]}</span>
+      <div class="cj-nums">${nums}</div>
       ${ro?'':`<div style="grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap">
         <button class="${r.contada?'ghost':'primary'}" onclick="openCaja('${k.id}')">${r.contada?'✏️ Ver / editar':'🔴 Contar al cerrar'}</button>
-        ${r.contada&&r.estado!=='apuntada'?`<button class="primary" onclick="cjIngreso('${k.id}')">💶 Apuntar ingreso de barra</button>`:''}
+        ${r.tipo==='barra'&&r.contada&&r.estado!=='apuntada'?`<button class="primary" onclick="cjIngreso('${k.id}')">💶 Apuntar ingreso de barra</button>`:''}
         <button class="icon-btn danger" onclick="delCaja('${k.id}')" title="Borrar">🗑️</button></div>`}
     </div>`; }).join('');
   content.innerHTML=html;
 }
+/* ---- Fondo de cambio ---- */
+function openFondo(id){
+  const c=activa(); if(!c) return; if(c.cerrada){ alert('🔒 Comisión cerrada.'); return; }
+  fdEditId=id||null; const f=id?(db.fondos||[]).find(x=>x.id===id):null;
+  fdDraft=JSON.parse(JSON.stringify((f&&f.desglose)||{}));
+  const fs=fiestasOrden(c);
+  document.getElementById('fondoTitulo').textContent=id?'👜 Editar fondo de cambio':'👜 Sacar fondo de cambio';
+  document.getElementById('fdFiesta').innerHTML='<option value="">(sin fiesta)</option>'+fs.map(x=>`<option value="${x.id}">${EMO[x.tipo]||'🎪'} ${esc(x.nombre)}</option>`).join('');
+  document.getElementById('fdNombre').value=f?f.nombre||'':'';
+  document.getElementById('fdFiesta').value=f?(f.fiestaId||''):((fs.find(x=>x.activa)||{}).id||'');
+  document.getElementById('fdFecha').value=f?f.fecha||'':hoyYMD();
+  document.getElementById('fdNota').value=f?f.nota||'':'';
+  document.getElementById('fdImporte').value=f&&!(cjTotal(f.desglose)>0)&&f.importe?f.importe:'';
+  document.getElementById('fdFilas').innerHTML='<tr class="sep"><td colspan="2">Billetes</td></tr>'+CJ_DEN.filter(d=>d>=500).map(fdFila).join('')+'<tr class="sep"><td colspan="2">Monedas</td></tr>'+CJ_DEN.filter(d=>d<500).map(fdFila).join('');
+  document.querySelectorAll('#fdFilas input').forEach(i=>i.oninput=()=>{ const v=Math.max(0,parseInt(i.value)||0); if(v) fdDraft[i.dataset.d]=v; else delete fdDraft[i.dataset.d]; fdActualizar(); });
+  fdActualizar(); showModal('fondoModal');
+}
+function fdFila(d){ return `<tr><td class="den">${d>=500?'💶':'🪙'} ${cjDenTxt(d)}</td><td><input type="number" min="0" step="1" inputmode="numeric" data-d="${d}" value="${cjUds(fdDraft,d)||''}" placeholder="0"><small id="fdS_${d}"></small></td></tr>`; }
+function fdActualizar(){
+  CJ_DEN.forEach(d=>{ const el=document.getElementById('fdS_'+d); if(el){ const u=cjUds(fdDraft,d); el.textContent=u?'= '+money(u*d/100):''; } });
+  const t=cjTotal(fdDraft), imp=document.getElementById('fdImporte');
+  document.getElementById('fdTot').textContent=t>0?money(t):'—';
+  if(t>0){ imp.value=t; imp.disabled=true; } else imp.disabled=false;
+}
+document.getElementById('fdGuardar').onclick=()=>{
+  const c=activa(); if(!c) return;
+  const t=cjTotal(fdDraft), imp=t>0?t:(parseFloat(document.getElementById('fdImporte').value)||0);
+  if(!(imp>0)){ alert('Pon cuánto se saca del banco (el total o cuántos billetes y monedas de cada).'); return; }
+  const fid=document.getElementById('fdFiesta').value, fi=fiestasOrden(c).find(x=>x.id===fid);
+  const data={nombre:document.getElementById('fdNombre').value.trim()||('Cambio'+(fi?' '+fi.nombre:'')),fiestaId:fid,fecha:document.getElementById('fdFecha').value,
+    nota:document.getElementById('fdNota').value.trim(),desglose:t>0?fdDraft:{},importe:Math.round(imp*100)/100,mod:new Date().toISOString()};
+  if(fdEditId) Object.assign(db.fondos.find(x=>x.id===fdEditId),data);
+  else db.fondos.push(Object.assign({id:uid(),comisionId:c.id,devuelto:false,creado:new Date().toISOString()},data));
+  save(); closeModal('fondoModal'); render();
+};
+function fdDevolver(id){
+  const f=(db.fondos||[]).find(x=>x.id===id); if(!f) return;
+  if(f.devuelto){ if(!confirm('¿Marcar este fondo como que todavía NO se ha devuelto al banco?')) return; f.devuelto=false; f.devueltoEl=''; }
+  else { const r=fdCalc(f);
+    if(r.abiertas.length && !confirm(`Todavía hay ${r.abiertas.length} caja${r.abiertas.length===1?'':'s'} sin contar con cambio de este fondo (${money(r.enCajas)}).\n¿Marcarlo como devuelto al banco igualmente?`)) return;
+    if(!r.abiertas.length && !confirm(`¿Se han devuelto al banco los ${money(r.total)} del fondo «${f.nombre}»?`)) return;
+    f.devuelto=true; f.devueltoEl=hoyYMD(); }
+  save(); render();
+}
+function delFondo(id){
+  const f=(db.fondos||[]).find(x=>x.id===id); if(!f) return;
+  if(!confirm(`¿Enviar a la papelera el fondo de cambio «${f.nombre}»?\n(Las cajas no se borran.)`)) return;
+  db.fondos=db.fondos.filter(x=>x.id!==id); papeleraPush('fondo',f.nombre||'(fondo)',f); save(); render();
+}
+/* ---- Caja ---- */
 function openCaja(id){
   const c=activa(); if(!c) return; if(c.cerrada){ alert('🔒 Comisión cerrada.'); return; }
   cjEditId=id||null; const k=id?(db.cajas||[]).find(x=>x.id===id):null;
   cjDraft=JSON.parse(JSON.stringify(k||{inicio:{},fin:{},listados:[]}));
   ['inicio','fin'].forEach(x=>{ if(!cjDraft[x]) cjDraft[x]={}; }); if(!Array.isArray(cjDraft.listados)) cjDraft.listados=[];
+  if(!cjDraft.tipo) cjDraft.tipo=k?'barra':'tickets';
   document.getElementById('cajaTitulo').textContent=id?'💰 '+(k.nombre||'Caja'):'💰 Nueva caja';
   const fs=fiestasOrden(c);
   document.getElementById('cjFiesta').innerHTML='<option value="">(sin fiesta)</option>'+fs.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('');
@@ -2523,13 +2641,25 @@ function openCaja(id){
   document.getElementById('cjFecha').value=k?k.fecha||'':hoyYMD();
   document.getElementById('cjFiesta').value=k?(k.fiestaId||''):((fs.find(f=>f.activa)||{}).id||'');
   document.getElementById('cjNota').value=k?k.nota||'':'';
+  const fds=fondosDe(c.id).filter(f=>!f.devuelto||f.id===cjDraft.fondoId);
+  if(!k && fds.length) cjDraft.fondoId=fds[0].id;
+  const sel=document.getElementById('cjFondo');
+  sel.innerHTML=fds.map(f=>`<option value="${f.id}">👜 ${esc(f.nombre||'Fondo')} · quedan ${money(fdCalc(f,cjEditId).bolsa)} en la bolsa</option>`).join('')+'<option value="">(no sale de un fondo de cambio)</option>';
+  sel.value=cjDraft.fondoId||''; sel.onchange=()=>{ cjDraft.fondoId=sel.value; cjActualizar(); };
   const otras=(db.cajas||[]).filter(x=>x.id!==id && cjTotal(x.inicio)>0).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
   const cp=document.getElementById('cjCopiar');
   cp.innerHTML='<option value="">📋 Copiar el cambio de otra caja…</option>'+otras.map(x=>`<option value="${x.id}">${esc(x.nombre||'Caja')}${x.fecha?' ('+fmtFecha(x.fecha)+')':''} · ${money(cjTotal(x.inicio))}</option>`).join('');
   cp.style.display=otras.length?'':'none';
   cp.onchange=()=>{ const o=(db.cajas||[]).find(x=>x.id===cp.value); if(o){ cjDraft.inicio=JSON.parse(JSON.stringify(o.inicio||{})); cjPintarFilas(); } cp.value=''; };
-  cjPintarFilas(); cjPintarListados();
+  document.querySelectorAll('#cjTipo button').forEach(b=>b.onclick=()=>{ cjDraft.tipo=b.dataset.t; cjPintarTipo(); });
+  cjPintarFilas(); cjPintarTipo();
   showModal('cajaModal');
+}
+function cjPintarTipo(){
+  const t=cjDraft.tipo;
+  document.querySelectorAll('#cjTipo button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.getElementById('cjNombre').placeholder=t==='tickets'?'Ej: Tickets en la plaza (viernes)':'Ej: Barra Halloween (sábado noche)';
+  cjPintarListados(); cjActualizar();
 }
 function cjPintarFilas(){
   const fila=d=>`<tr><td class="den">${d>=500?'💶':'🪙'} ${cjDenTxt(d)}</td>`+['inicio','fin'].map(x=>`<td><input type="number" min="0" step="1" inputmode="numeric" data-k="${x}" data-d="${d}" value="${cjUds(cjDraft[x],d)||''}" placeholder="0"><small id="cjS_${x}_${d}"></small></td>`).join('')+'</tr>';
@@ -2538,29 +2668,41 @@ function cjPintarFilas(){
   cjActualizar();
 }
 function cjPintarListados(){
-  const c=activa(), ls=listadosDe(c.id).filter(l=>lsTot(l).cobrado>0||cjDraft.listados.includes(l.id));
-  document.getElementById('cjListadosW').style.display=ls.length?'':'none';
-  document.getElementById('cjListados').innerHTML=ls.map(l=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:3px 0"><input type="checkbox" value="${l.id}" ${cjDraft.listados.includes(l.id)?'checked':''}> 📋 ${esc(l.nombre)} · cobrado ${money(lsTot(l).cobrado)}</label>`).join('');
+  const c=activa(), tic=cjDraft.tipo==='tickets';
+  const ls=listadosDe(c.id).filter(l=>tic||lsTot(l).cobrado>0||cjDraft.listados.includes(l.id)).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+  document.getElementById('cjListadosW').style.display=ls.length||tic?'':'none';
+  document.getElementById('cjListTit').textContent=tic?'📋 ¿Qué listados se cobran en esta caja?':'🎟️ ¿Se cobraron aquí también tickets de algún listado?';
+  document.getElementById('cjListSub').textContent=tic?'(lo cobrado en la caja tiene que cuadrar con lo que marcan)':'(ese dinero ya se apunta desde Listados)';
+  document.getElementById('cjListados').innerHTML=ls.length?ls.map(l=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:3px 0"><input type="checkbox" value="${l.id}" ${cjDraft.listados.includes(l.id)?'checked':''}> 📋 ${esc(l.nombre)} · cobrado ${money(lsTot(l).cobrado)}</label>`).join(''):'<div class="muted">No hay listados en esta comisión.</div>';
   document.querySelectorAll('#cjListados input').forEach(i=>i.onchange=()=>{ cjDraft.listados=[...document.querySelectorAll('#cjListados input:checked')].map(x=>x.value); cjActualizar(); });
 }
 function cjActualizar(){
   CJ_DEN.forEach(d=>['inicio','fin'].forEach(x=>{ const el=document.getElementById(`cjS_${x}_${d}`); if(el){ const u=cjUds(cjDraft[x],d); el.textContent=u?'= '+money(u*d/100):''; } }));
   const r=cjCalc(cjDraft);
   document.getElementById('cjTotIni').textContent=money(r.ini); document.getElementById('cjTotFin').textContent=r.contada?money(r.fin):'—';
-  document.getElementById('cjRes').innerHTML=!r.contada
-    ? `<div><span>🟢 Cambio al empezar</span><b>${money(r.ini)}</b></div><div class="muted" style="display:block">Cuando cerréis, vuelve aquí y apunta lo que hay en «Al cerrar».</div>`
-    : `<div><span>🔴 Al cerrar</span><b>${money(r.fin)}</b></div>
-       <div><span>− Cambio que se metió al empezar</span><b>${money(-r.ini)}</b></div>
-       <div><span>= Recaudado en la caja</span><b>${money(r.recaudado)}</b></div>
+  const f=(db.fondos||[]).find(x=>x.id===cjDraft.fondoId); let aviso='';
+  if(f && !r.contada){ const b=fdCalc(f,cjEditId).bolsa; aviso=r.ini>b+0.005?`<div style="color:#ff9b9b;display:block">⚠️ En la bolsa de «${esc(f.nombre)}» solo quedan ${money(b)}.</div>`:`<div class="muted" style="display:block">👜 Después de coger este cambio quedarán ${money(b-r.ini)} en la bolsa.</div>`; }
+  let h;
+  if(!r.contada) h=`<div><span>🟢 Cambio al empezar</span><b>${money(r.ini)}</b></div>${aviso}<div class="muted" style="display:block">Cuando cerréis, vuelve aquí y apunta lo que hay en «Al cerrar».</div>`;
+  else if(r.tipo==='tickets') h=`<div><span>🔴 Al cerrar</span><b>${money(r.fin)}</b></div>
+       <div><span>− Cambio (vuelve a la bolsa)</span><b>${money(-r.ini)}</b></div>
+       <div><span>= Cobrado en la caja</span><b>${money(r.recaudado)}</b></div>
+       <div><span>📋 Según los listados</span><b>${money(r.tickets)}</b></div>
+       <div class="tot" style="color:${Math.abs(r.desc)<0.01?'var(--green)':'#ff9b9b'}"><span>⚖️ ${Math.abs(r.desc)<0.01?'✅ Cuadra':'⚠️ No cuadra'}</span><span>${descTxt(r.desc)}</span></div>
+       ${Math.abs(r.desc)>=0.01?`<div class="muted" style="display:block">${r.desc>0?'Hay más dinero del marcado: puede que falte marcar a alguien como pagado en el listado.':'Falta dinero: revisa el recuento o si hay alguien marcado como pagado que no pagó.'}</div>`:''}`;
+  else h=`<div><span>🔴 Al cerrar</span><b>${money(r.fin)}</b></div>
+       <div><span>− Cambio (vuelve a la bolsa)</span><b>${money(-r.ini)}</b></div>
+       <div><span>= Cobrado en la caja</span><b>${money(r.recaudado)}</b></div>
        ${r.tickets?`<div><span>− Tickets de listados (ya apuntados aparte)</span><b>${money(-r.tickets)}</b></div>`:''}
        <div class="tot"><span>🍺 Ha hecho la barra</span><span>${money(r.barra)}</span></div>
        ${r.barra<0?'<div style="color:#ff9b9b;display:block">⚠️ Sale negativo: revisa el recuento.</div>':''}`;
+  document.getElementById('cjRes').innerHTML=h;
 }
 document.getElementById('cjGuardar').onclick=()=>{
   const c=activa(); if(!c||!cjDraft) return;
   const fid=document.getElementById('cjFiesta').value, f=fiestasOrden(c).find(x=>x.id===fid);
-  const nombre=document.getElementById('cjNombre').value.trim()||('Caja'+(f?' '+f.nombre:''));
-  const data={nombre,fiestaId:fid,fecha:document.getElementById('cjFecha').value,nota:document.getElementById('cjNota').value.trim(),inicio:cjDraft.inicio,fin:cjDraft.fin,listados:cjDraft.listados,mod:new Date().toISOString()};
+  const nombre=document.getElementById('cjNombre').value.trim()||((cjDraft.tipo==='tickets'?'Tickets':'Barra')+(f?' '+f.nombre:''));
+  const data={nombre,tipo:cjDraft.tipo,fondoId:cjDraft.fondoId||'',fiestaId:fid,fecha:document.getElementById('cjFecha').value,nota:document.getElementById('cjNota').value.trim(),inicio:cjDraft.inicio,fin:cjDraft.fin,listados:cjDraft.listados,mod:new Date().toISOString()};
   if(cjEditId) Object.assign(db.cajas.find(x=>x.id===cjEditId),data);
   else db.cajas.push(Object.assign({id:uid(),comisionId:c.id,creado:new Date().toISOString()},data));
   save(); closeModal('cajaModal'); render();
@@ -2572,6 +2714,7 @@ function delCaja(id){
 }
 function cjIngreso(id){
   const k=(db.cajas||[]).find(x=>x.id===id); if(!k) return; const r=cjCalc(k);
+  if(r.tipo!=='barra') return;
   if(!r.contada){ alert('Primero cuenta la caja al cerrar.'); return; }
   const falta=Math.round((r.barra-r.apuntado)*100)/100;
   if(falta<=0){ alert(r.barra<=0?'La barra sale a 0 o negativa: revisa el recuento.':'El ingreso de esta caja ya está apuntado.'); return; }
