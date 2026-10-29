@@ -352,6 +352,10 @@
   .ls-dot.nino{width:26px;height:26px;border-style:dashed;font-size:11px}
   .ls-dot.on{background:var(--green);border-color:var(--green);border-style:solid;color:#062012}
   .ls-dot:disabled{cursor:default}
+  .ls-tar{display:grid;grid-template-columns:1fr 110px 40px;gap:6px;margin-bottom:6px;align-items:center}
+  .ls-tar input{width:100%}
+  .ls-tar-add{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .ls-tar-add button{padding:6px 10px;font-size:13px}
   .ls-imp{text-align:right;white-space:nowrap} .ls-imp b{font-size:15px} .ls-imp small{display:block;font-size:11.5px;color:var(--muted)}
   .ls-imp .ok{color:var(--green);font-weight:800}
   .ls-acc{display:flex;gap:4px;justify-content:flex-end}
@@ -744,9 +748,10 @@
     <div><label>Día de la comida / cena</label><input type="date" id="lsFechaL"></div>
     <div><label>Fiesta</label><select id="lsFiestaL"></select></div>
   </div>
-  <div class="field two">
-    <div><label>Precio por persona (€)</label><input type="number" id="lsPrecioL" min="0" step="0.5" placeholder="Ej: 15"></div>
-    <div><label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="lsConNinosL"> Los niños pagan otro precio</label><input type="number" id="lsPrecioNinoL" min="0" step="0.5" placeholder="Precio niño (0 = gratis)"></div>
+  <div class="field"><label>Tarifas: lo que paga cada uno (€)</label>
+    <div id="lsTarifasL"></div>
+    <div class="ls-tar-add" id="lsTarAddL"></div>
+    <div class="muted" style="font-size:12px;margin-top:6px">Ej: Adulto 17 € · Niño 8 € · Solo postre y café 3 € · Bebé 0 € (gratis). Si solo pones una, es el precio por persona.</div>
   </div>
   <div class="field"><label>Nota (opcional)</label><textarea id="lsNotaL" rows="2" placeholder="Menú, hora, dónde se cobra…"></textarea></div>
   <div class="modal-actions"><button class="ghost" onclick="closeModal('listadoModal')">Cancelar</button><button class="primary" id="lsGuardarL">Guardar</button></div>
@@ -756,15 +761,8 @@
 <div class="modal-bg" id="apuntadoModal"><div class="modal" style="max-width:560px">
   <h3>✏️ Editar apuntado</h3>
   <div class="field"><label>Nombre</label><input type="text" id="apNombre"></div>
-  <div class="field two">
-    <div><label id="apAdLbl">Adultos (contando a la persona)</label><input type="number" id="apAd" min="0" step="1"></div>
-    <div id="apNiW"><label>Niños</label><input type="number" id="apNi" min="0" step="1"></div>
-  </div>
+  <div id="apTarifas"></div>
   <div class="field"><label>Se apuntó por</label><select id="apVia"></select></div>
-  <div class="field two">
-    <div><label>Adultos que ya han pagado</label><input type="number" id="apPagA" min="0" step="1"></div>
-    <div id="apPagNW"><label>Niños que ya han pagado</label><input type="number" id="apPagN" min="0" step="1"></div>
-  </div>
   <div class="field"><label>Nota (opcional)</label><input type="text" id="apNota" placeholder="Ej: uno es celíaco, vienen a las 15:00…"></div>
   <div class="modal-actions"><button class="ghost" onclick="closeModal('apuntadoModal')">Cancelar</button><button class="primary" id="apGuardar">Guardar</button></div>
 </div></div>
@@ -965,6 +963,7 @@ function normaliza(d){
   }
   delete d.stock;
   stMigrar(d);
+  (d.listados||[]).forEach(lsNorm);
   // asegurar que las categorías usadas están en la lista global de categorías de stock
   d.comisiones.forEach(c=>(c.stock||[]).forEach(x=>{ const k=(x.categoria||'').trim(); if(k && !d.stockCats.some(v=>normName(v)===normName(k))) d.stockCats.push(k); }));
   // migrar papelera al formato unificado {id,tipo,titulo,deletedAt,payload}
@@ -2758,28 +2757,73 @@ function cjIngreso(id){
 }
 
 /* ============ LISTADOS (gente apuntada a comidas y cenas, y cobro en la plaza) ============ */
-let lsSel='', lsSearch='', lsFiltro='', lsVia='bar', lsEditId=null, lsApEditId=null;
+let lsSel='', lsSearch='', lsFiltro='', lsVia='bar', lsEditId=null, lsApEditId=null, lsTarDraft=[];
 const LS_VIAS={bar:'🍺 Lista del bar',whatsapp:'💬 WhatsApp',instagram:'📸 Instagram',correo:'✉️ Correo',persona:'🗣️ En persona',otro:'• Otro'};
+const LS_SUGER=[['Niño',''],['Solo postre y café',''],['Bebé',0]];
 function listadosDe(cid){ return (db.listados||[]).filter(l=>l.comisionId===cid); }
-function lsPrecio(l,t){ const v=parseFloat(t==='N'?l.precioNino:l.precio); return isNaN(v)?0:v; }
-function lsGrupo(l,g){ return {A:Math.max(0,Math.floor(+g.adultos||0)), N:l.conNinos?Math.max(0,Math.floor(+g.ninos||0)):0}; }
-function lsPag(l,g){ const x=lsGrupo(l,g); return {A:Math.min(Math.max(0,+g.pagA||0),x.A), N:Math.min(Math.max(0,+g.pagN||0),x.N)}; }
-function lsDebe(l,g){ const x=lsGrupo(l,g); return x.A*lsPrecio(l,'A')+x.N*lsPrecio(l,'N'); }
-function lsPagado(l,g){ const p=lsPag(l,g); return p.A*lsPrecio(l,'A')+p.N*lsPrecio(l,'N'); }
+function lsNum(v){ const n=parseFloat(v); return isNaN(n)?0:Math.max(0,n); }
+function lsInt(v){ return Math.max(0,Math.floor(+v||0)); }
+/* Cada listado tiene tarifas (Adulto 17 €, Niño 8 €, Solo postre 3 €…) y cada apunte dice cuántos van de cada una.
+   Los listados antiguos (precio + «los niños pagan otro precio») se pasan solos a tarifas. */
+function lsNorm(l){
+  if(!Array.isArray(l.tarifas)){
+    l.tarifas=[{id:'A',nombre:l.conNinos?'Adulto':'Persona',precio:lsNum(l.precio)}];
+    if(l.conNinos) l.tarifas.push({id:'N',nombre:'Niño',precio:lsNum(l.precioNino)});
+    delete l.precio; delete l.conNinos; delete l.precioNino;
+  }
+  (l.gente||[]).forEach(g=>lsNormG(l,g));
+  return l;
+}
+function lsNormG(l,g){
+  if(g.n && typeof g.n==='object'){ if(!g.pag||typeof g.pag!=='object') g.pag={}; return; }
+  const t0=l.tarifas[0].id, tn=l.tarifas.some(t=>t.id==='N')?'N':null;
+  g.n={}; g.pag={};
+  const add=(o,k,v)=>{ v=lsInt(v); if(k&&v) o[k]=(o[k]||0)+v; };
+  add(g.n,t0,g.adultos); add(g.n,tn,g.ninos); add(g.pag,t0,g.pagA); add(g.pag,tn,g.pagN);
+  delete g.adultos; delete g.ninos; delete g.pagA; delete g.pagN;
+}
+function lsTarifas(l){ if(!Array.isArray(l.tarifas)) lsNorm(l); return l.tarifas; }
+function lsGrupo(l,g){ const o={}; lsTarifas(l); lsNormG(l,g); l.tarifas.forEach(t=>o[t.id]=lsInt(g.n[t.id])); return o; }
+function lsPag(l,g){ const x=lsGrupo(l,g), o={}; for(const k in x) o[k]=Math.min(lsInt(g.pag[k]),x[k]); return o; }
+function lsSuma(o){ return Object.values(o).reduce((s,v)=>s+(+v||0),0); }
+function lsImporte(l,o){ return Math.round(lsTarifas(l).reduce((s,t)=>s+(o[t.id]||0)*lsNum(t.precio),0)*100)/100; }
+function lsDebe(l,g){ return lsImporte(l,lsGrupo(l,g)); }
+function lsPagado(l,g){ return lsImporte(l,lsPag(l,g)); }
+function lsEstado(l,g){ const per=lsSuma(lsGrupo(l,g)), pp=lsSuma(lsPag(l,g)); return per>0&&pp>=per?'pag':(pp>0?'med':'no'); }
+function lsPlural(nom,n){ nom=String(nom||'').toLowerCase(); if(n===1||/\s/.test(nom)) return nom; return /[aeiouáéíóú]$/.test(nom)?nom+'s':nom+'es'; }
+/* «3 adultos · 1 niño · 1 solo postre y café» */
+function lsDetalle(l,o){
+  const ts=lsTarifas(l);
+  if(ts.length===1){ const n=o[ts[0].id]||0; return n+' persona'+(n===1?'':'s'); }
+  return ts.filter(t=>o[t.id]).map(t=>o[t.id]+' '+lsPlural(t.nombre,o[t.id])).join(' · ')||'0 personas';
+}
+function lsPrecioTxt(l){
+  const ts=lsTarifas(l), p=t=>lsNum(t.precio)?money(lsNum(t.precio)):'gratis';
+  return ts.length===1?p(ts[0])+' por persona':ts.map(t=>t.nombre+' '+p(t)).join(' · ');
+}
 function lsTot(l){
-  const t={grupos:0,A:0,N:0,pagA:0,pagN:0,total:0,cobrado:0,gPag:0,gMed:0,gNo:0};
-  (l.gente||[]).forEach(g=>{ const x=lsGrupo(l,g), p=lsPag(l,g); t.grupos++; t.A+=x.A; t.N+=x.N; t.pagA+=p.A; t.pagN+=p.N; t.total+=lsDebe(l,g);
-    t.cobrado+=lsPagado(l,g);
-    const per=x.A+x.N, pp=p.A+p.N; if(per>0&&pp>=per) t.gPag++; else if(pp>0) t.gMed++; else t.gNo++; });
-  t.personas=t.A+t.N; t.pagados=t.pagA+t.pagN;
+  const t={grupos:0,por:{},pagPor:{},total:0,cobrado:0,gPag:0,gMed:0,gNo:0};
+  lsTarifas(l).forEach(x=>{ t.por[x.id]=0; t.pagPor[x.id]=0; });
+  (l.gente||[]).forEach(g=>{ const x=lsGrupo(l,g), p=lsPag(l,g); t.grupos++;
+    for(const k in x){ t.por[k]+=x[k]; t.pagPor[k]+=p[k]; }
+    t.total+=lsImporte(l,x); t.cobrado+=lsImporte(l,p);
+    const e=lsEstado(l,g); if(e==='pag') t.gPag++; else if(e==='med') t.gMed++; else t.gNo++; });
+  t.personas=lsSuma(t.por); t.pagados=lsSuma(t.pagPor);
+  t.total=Math.round(t.total*100)/100; t.cobrado=Math.round(t.cobrado*100)/100;
   t.pasado=db.movimientos.filter(m=>m.listadoId===l.id).reduce((s,m)=>s+(+m.importe||0),0);
   return t;
 }
-/* «Javi León + 4» → 5 adultos · «Familia Royo + 2 + 2 niños» → 3 adultos y 2 niños */
-function lsParse(txt){
-  let A=1,N=0,hay=false;
-  const nombre=String(txt||'').replace(/\+\s*(\d+)\s*([a-zA-ZñÑáéíóúÁÉÍÓÚ]+)?/g,(m,n,k)=>{ hay=true; if(k&&/^(ni[ñn]|cr[ií]|peque|chaval|crio)/i.test(k)) N+=+n; else A+=+n; return ' '; }).replace(/\s{2,}/g,' ').trim();
-  return {nombre,A,N,hay};
+/* «Javi León + 4» → 5 de la primera tarifa · «Familia Royo + 2 + 2 niños + 1 postre» → cada número a la tarifa que nombra */
+function lsParse(txt,l){
+  const ts=lsTarifas(l), n={}; ts.forEach(t=>n[t.id]=0); n[ts[0].id]=1; let hay=false;
+  const busca=k=>{
+    const w=normName(k);
+    if(/^(ni[ñn]|cr[ií]|peque|chaval|crio)/i.test(w)){ const t=ts.find(t=>/^ni[ñn]/.test(normName(t.nombre))); if(t) return t; }
+    if(w.length<3) return null;
+    return ts.find(t=>normName(t.nombre).split(' ').some(p=>p.length>=3&&(p.startsWith(w.slice(0,4))||w.startsWith(p.slice(0,4)))));
+  };
+  const nombre=String(txt||'').replace(/\+\s*(\d+)\s*([a-zA-ZñÑáéíóúÁÉÍÓÚ]+)?/g,(m,c,k)=>{ hay=true; const t=k?busca(k):null; n[(t||ts[0]).id]+=+c; return ' '; }).replace(/\s{2,}/g,' ').trim();
+  return {nombre,n,hay};
 }
 function lsActual(c){
   const ls=listadosDe(c.id); if(!ls.length) return null;
@@ -2796,19 +2840,18 @@ function renderListados(){
   let html=`<div class="section-title"><h2>📋 Listados</h2>${ro?'':'<button class="primary" onclick="openListado()">+ Nuevo listado</button>'}</div>
   <p class="muted" style="margin:-6px 0 12px">La gente que se apunta a cada comida o cena (por la lista del bar, WhatsApp, Instagram, correo…) y quién ha pagado. Comisión <b>${esc(c.nombre)}</b>.</p>`;
   if(!ls.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ningún listado.<br>Crea uno por cada comida o cena (p. ej. «Comida de Halloween») y ve apuntando a la gente.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openListado()">+ Nuevo listado</button>'}</div>`; return; }
-  const l=lsActual(c), t=lsTot(l);
+  const l=lsActual(c), t=lsTot(l), ts=lsTarifas(l);
   html+=`<div class="nt-chips" style="margin-bottom:10px">${ls.map(x=>{ const tt=lsTot(x); return `<button class="${x.id===l.id?'on':''}" onclick="lsSel='${x.id}';lsSearch='';lsFiltro='';renderListados()">${esc((EMO[(fiestas.find(f=>f.id===x.fiestaId)||{}).tipo]||'📋')+' '+x.nombre)} · ${tt.personas}</button>`; }).join('')}</div>`;
-  const precioTxt=money(lsPrecio(l,'A'))+' por persona'+(l.conNinos?' · niños '+(lsPrecio(l,'N')?money(lsPrecio(l,'N')):'gratis'):'');
   html+=`<div class="ls-head"><div style="flex:1 1 260px"><h3>${esc(l.nombre)}</h3>
-      <div class="muted">${l.fecha?'📅 '+fmtFecha(l.fecha)+(diasHasta(l.fecha)>=0?' ('+cuandoTxt(l.fecha)+')':'')+' · ':''}${esc(fNom(l.fiestaId)||'Sin fiesta')} · 💶 ${precioTxt}</div>
+      <div class="muted">${l.fecha?'📅 '+fmtFecha(l.fecha)+(diasHasta(l.fecha)>=0?' ('+cuandoTxt(l.fecha)+')':'')+' · ':''}${esc(fNom(l.fiestaId)||'Sin fiesta')} · 💶 ${esc(lsPrecioTxt(l))}</div>
       ${l.nota?`<div class="muted" style="margin-top:3px;white-space:pre-wrap">${esc(l.nota)}</div>`:''}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="ghost" id="btnLsPdf" onclick="lsPdf()" title="Lista en PDF para llevar a la plaza">📄 PDF para la plaza</button>
-      ${ro?'':`<button class="ghost" onclick="lsPegar()">📥 Pegar lista</button><button class="ghost" onclick="lsIngreso()" title="Apuntar lo cobrado como ingreso en Movimientos">💶 Pasar a ingresos</button><button class="icon-btn ghost" onclick="openListado('${l.id}')" title="Editar listado">✏️</button><button class="icon-btn danger" onclick="delListado('${l.id}')" title="Borrar listado">🗑️</button>`}
+      ${ro?'':`<button class="ghost" onclick="lsPegar()">📥 Pegar lista</button><button class="ghost" onclick="lsIngreso()" title="Apuntar lo cobrado como ingreso en Movimientos">💶 Pasar a ingresos</button><button class="icon-btn ghost" onclick="openListado('${l.id}')" title="Editar listado y tarifas">✏️</button><button class="icon-btn danger" onclick="delListado('${l.id}')" title="Borrar listado">🗑️</button>`}
     </div></div>`;
   const pct=t.personas?Math.round(100*t.pagados/t.personas):0;
   html+=`<div class="ls-kpis">
-    <div class="ls-kpi"><div class="l">🙋 Apuntados</div><div class="v">${t.personas} personas</div><div class="s">${l.conNinos?t.A+' adultos · '+t.N+' niños · ':''}${t.grupos} ${t.grupos===1?'apunte':'apuntes'}</div></div>
+    <div class="ls-kpi"><div class="l">🙋 Apuntados</div><div class="v">${t.personas} personas</div><div class="s">${ts.length>1?esc(lsDetalle(l,t.por))+' · ':''}${t.grupos} ${t.grupos===1?'apunte':'apuntes'}</div></div>
     <div class="ls-kpi"><div class="l">✅ Han pagado</div><div class="v">${t.pagados} de ${t.personas}</div><div class="ls-prog"><span style="width:${pct}%"></span></div></div>
     <div class="ls-kpi"><div class="l">💶 Cobrado</div><div class="v" style="color:var(--green)">${money(t.cobrado)}</div><div class="s">💵 en efectivo${t.pasado?' · '+money(t.pasado)+' ya en Movimientos':''}</div></div>
     <div class="ls-kpi"><div class="l">⏳ Falta por cobrar</div><div class="v" style="color:${t.total-t.cobrado>0?'#ffc76b':'var(--green)'}">${money(t.total-t.cobrado)}</div><div class="s">de ${money(t.total)} en total</div></div>
@@ -2816,30 +2859,28 @@ function renderListados(){
   if(!ro){
     html+=`<div class="ls-add">
       <div class="nom"><label>Nombre (puedes escribir «Javi León + 4»)</label><input type="text" id="lsNombre" placeholder="Nombre y apellido…" autocomplete="off"></div>
-      <div><label>${l.conNinos?'Adultos':'Personas'}</label><input type="number" id="lsAd" min="0" step="1" value="1"></div>
-      ${l.conNinos?'<div><label>Niños</label><input type="number" id="lsNi" min="0" step="1" value="0"></div>':''}
+      ${ts.map((tf,i)=>`<div><label>${esc(ts.length===1?'Personas':tf.nombre)}</label><input type="number" class="lsN" data-t="${tf.id}" min="0" step="1" value="${i?0:1}"></div>`).join('')}
       <div><label>Se apunta por</label><select id="lsVia">${Object.entries(LS_VIAS).map(([k,v])=>`<option value="${k}" ${lsVia===k?'selected':''}>${v}</option>`).join('')}</select></div>
       <button class="primary" onclick="lsAdd()">➕ Apuntar</button>
     </div>`;
   }
   const q=normName(lsSearch);
-  const estado=g=>{ const x=lsGrupo(l,g), p=lsPag(l,g), per=x.A+x.N, pp=p.A+p.N; return per>0&&pp>=per?'pag':(pp>0?'med':'no'); };
-  const lista=(l.gente||[]).filter(g=>(!q||normName([g.nombre,g.nota].join(' ')).includes(q)) && (!lsFiltro||(lsFiltro==='pag'?estado(g)==='pag':estado(g)!=='pag')))
+  const lista=(l.gente||[]).filter(g=>(!q||normName([g.nombre,g.nota].join(' ')).includes(q)) && (!lsFiltro||(lsFiltro==='pag'?lsEstado(l,g)==='pag':lsEstado(l,g)!=='pag')))
     .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
   const chips=[['','Todos',t.grupos],['no','⏳ Sin pagar',t.gNo+t.gMed],['pag','✅ Pagados',t.gPag]];
   html+=`<div class="toolbar" style="margin-top:6px"><input type="text" id="lsBuscar" placeholder="🔎 Buscar nombre…" value="${esc(lsSearch)}" style="min-width:200px;flex:1 1 200px">
     <div class="nt-chips">${chips.map(([k,tx,n])=>`<button class="${lsFiltro===k?'on':''}" onclick="lsFiltro='${k}';renderListados()">${tx} (${n})</button>`).join('')}</div>
   </div>`;
   const fila=g=>{
-    const x=lsGrupo(l,g), p=lsPag(l,g), est=estado(g), per=x.A+x.N, debe=lsDebe(l,g), pagado=lsPagado(l,g);
+    const x=lsGrupo(l,g), p=lsPag(l,g), est=lsEstado(l,g), per=lsSuma(x), debe=lsDebe(l,g), pagado=lsPagado(l,g);
     let dots='';
-    for(let i=0;i<x.A;i++) dots+=`<button class="ls-dot ${i<p.A?'on':''}" ${ro?'disabled':`onclick="lsDot('${g.id}','A',${i})"`} title="Adulto ${i+1}${i<p.A?' · pagado':''}">${i<p.A?'✓':i+1}</button>`;
-    for(let i=0;i<x.N;i++) dots+=`<button class="ls-dot nino ${i<p.N?'on':''}" ${ro?'disabled':`onclick="lsDot('${g.id}','N',${i})"`} title="Niño ${i+1}${i<p.N?' · pagado':''}">${i<p.N?'✓':'N'}</button>`;
+    ts.forEach((tf,ti)=>{ const letra=esc((tf.nombre||'?').trim().charAt(0).toUpperCase());
+      for(let i=0;i<x[tf.id];i++) dots+=`<button class="ls-dot ${ti?'nino':''} ${i<p[tf.id]?'on':''}" ${ro?'disabled':`onclick="lsDot('${g.id}','${tf.id}',${i})"`} title="${esc(tf.nombre)} ${i+1}${i<p[tf.id]?' · pagado':''}">${i<p[tf.id]?'✓':(ti?letra:i+1)}</button>`; });
     const imp=est==='pag'?`<span class="ok">✅ Pagado</span><small>${money(pagado)}</small>`
       :`<b>${money(debe-pagado)}</b><small>${est==='med'?'falta · ya pagó '+money(pagado):'a pagar'}</small>`;
     return `<div class="ls-row ${est==='pag'?'pagado':(est==='med'?'parcial':'')}">
       <div class="ls-nom"><b>${esc(g.nombre||'(sin nombre)')}</b>${per>1?`<span class="ls-mas">+${per-1}</span>`:''}
-        <div class="meta">${l.conNinos?x.A+' adulto'+(x.A===1?'':'s')+' · '+x.N+' niño'+(x.N===1?'':'s'):x.A+' persona'+(x.A===1?'':'s')} · ${LS_VIAS[g.via]||''}${g.nota?' · '+esc(g.nota):''}</div></div>
+        <div class="meta">${esc(lsDetalle(l,x))} · ${LS_VIAS[g.via]||''}${g.nota?' · '+esc(g.nota):''}</div></div>
       <div class="ls-dots">${dots}</div>
       <div class="ls-imp">${imp}</div>
       <div class="ls-acc">${ro?'':`<button class="${est==='pag'?'ghost':'primary'} ls-todo" onclick="lsTodo('${g.id}')">${est==='pag'?'↩️ Deshacer':'💶 Cobrar todo'}</button><button class="icon-btn ghost" onclick="openApuntado('${g.id}')" title="Editar">✏️</button><button class="icon-btn danger" onclick="delApuntado('${g.id}')" title="Borrar">🗑️</button>`}</div>
@@ -2851,55 +2892,57 @@ function renderListados(){
   const n=document.getElementById('lsNombre');
   if(n){
     n.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); lsAdd(); } };
-    n.oninput=()=>{ const p=lsParse(n.value); if(p.hay){ const ni=document.getElementById('lsNi'); document.getElementById('lsAd').value=ni?p.A:p.A+p.N; if(ni) ni.value=p.N; } };
+    n.oninput=()=>{ const p=lsParse(n.value,l); if(p.hay) document.querySelectorAll('.ls-add .lsN').forEach(i=>i.value=p.n[i.dataset.t]||0); };
     document.getElementById('lsVia').onchange=e=>{ lsVia=e.target.value; };
   }
 }
 function lsListado(){ const c=activa(); return c?lsActual(c):null; }
 function lsAdd(){
   const l=lsListado(); if(!l||soloLectura) return;
-  const n=document.getElementById('lsNombre'), p=lsParse(n.value);
+  const n=document.getElementById('lsNombre'), p=lsParse(n.value,l);
   if(!p.nombre){ alert('Escribe el nombre.'); n.focus(); return; }
-  const A=Math.max(0,parseInt(document.getElementById('lsAd').value)||0), ni=document.getElementById('lsNi'), N=ni?Math.max(0,parseInt(ni.value)||0):0;
-  if(A+N<1){ alert('Tiene que haber al menos una persona.'); return; }
+  const cnt={}; document.querySelectorAll('.ls-add .lsN').forEach(i=>{ const v=lsInt(i.value); if(v) cnt[i.dataset.t]=v; });
+  const per=lsSuma(cnt);
+  if(per<1){ alert('Tiene que haber al menos una persona.'); return; }
   const rep=(l.gente||[]).find(g=>normName(g.nombre)===normName(p.nombre));
-  if(rep && !confirm(`«${rep.nombre}» ya está apuntado (${lsGrupo(l,rep).A+lsGrupo(l,rep).N} personas).\n¿Apuntarlo otra vez como un apunte aparte?`)) return;
+  if(rep && !confirm(`«${rep.nombre}» ya está apuntado (${lsSuma(lsGrupo(l,rep))} personas).\n¿Apuntarlo otra vez como un apunte aparte?`)) return;
   if(!Array.isArray(l.gente)) l.gente=[];
-  l.gente.push({id:uid(),nombre:p.nombre,adultos:A,ninos:N,via:lsVia,nota:'',pagA:0,pagN:0,metodo:'',creado:new Date().toISOString()});
-  save(); lsSearch=''; renderListados(); avisoBreve('✅ Apuntado: '+p.nombre+(A+N>1?' + '+(A+N-1):''));
+  l.gente.push({id:uid(),nombre:p.nombre,n:cnt,pag:{},via:lsVia,nota:'',creado:new Date().toISOString()});
+  save(); lsSearch=''; renderListados(); avisoBreve('✅ Apuntado: '+p.nombre+(per>1?' + '+(per-1):''));
   const nn=document.getElementById('lsNombre'); if(nn) nn.focus();
 }
-function lsDot(gid,t,i){
+function lsDot(gid,tid,i){
   const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g||soloLectura) return;
-  const k=t==='A'?'pagA':'pagN', cur=lsPag(l,g)[t];
-  if(i>=cur){ lsCobrar(gid, t==='A'?i+1-cur:0, t==='N'?i+1-cur:0); return; }   // marcar como pagado → ventana de cobro
-  g[k]=i; save(); renderListados();
+  const cur=lsPag(l,g)[tid]||0;
+  if(i>=cur){ lsCobrar(gid,{[tid]:i+1-cur}); return; }   // marcar como pagado → ventana de cobro
+  g.pag[tid]=i; save(); renderListados();
 }
 function lsTodo(gid){
   const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g||soloLectura) return;
   const x=lsGrupo(l,g), p=lsPag(l,g);
-  if(p.A+p.N>=x.A+x.N){ if(!confirm(`¿Quitar el pago de «${g.nombre}»?`)) return; g.pagA=0; g.pagN=0; }
-  else { lsCobrar(gid, x.A-p.A, x.N-p.N); return; }
+  if(lsEstado(l,g)==='pag'){ if(!confirm(`¿Quitar el pago de «${g.nombre}»?`)) return; g.pag={}; }
+  else { const sel={}; for(const k in x) sel[k]=x[k]-p[k]; lsCobrar(gid,sel); return; }
   save(); renderListados();
 }
 /* ---- Ventana de cobro: total, cuánto te da y cuánto hay que devolver ---- */
 let coSt=null;
-function lsCobrar(gid,a,n){
+function lsCobrar(gid,sel){
   const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g||soloLectura) return;
   const x=lsGrupo(l,g), p=lsPag(l,g);
-  coSt={gid, maxA:x.A-p.A, maxN:x.N-p.N, a:Math.min(a,x.A-p.A), n:Math.min(n,x.N-p.N)};
+  coSt={gid,max:{},n:{}};
+  for(const k in x){ coSt.max[k]=x[k]-p[k]; coSt.n[k]=Math.min(lsInt(sel[k]),coSt.max[k]); }
   document.getElementById('coTitulo').textContent='💶 Cobrar a '+(g.nombre||'');
   document.getElementById('coDa').value='';
   coPintar(); showModal('cobroModal');
   setTimeout(()=>{ const i=document.getElementById('coDa'); i.focus(); },60);
 }
-function coTotal(){ const l=lsListado(); return Math.round((coSt.a*lsPrecio(l,'A')+coSt.n*lsPrecio(l,'N'))*100)/100; }
-function coPaso(t,d){ const k=t==='A'?'a':'n', m=t==='A'?'maxA':'maxN'; coSt[k]=Math.max(0,Math.min(coSt[m],coSt[k]+d)); coPintar(); }
+function coTotal(){ return lsImporte(lsListado(),coSt.n); }
+function coPaso(tid,d){ coSt.n[tid]=Math.max(0,Math.min(coSt.max[tid],(coSt.n[tid]||0)+d)); coPintar(); }
 function coPintar(){
-  const l=lsListado(), ninos=l.conNinos&&coSt.maxN>0;
-  const paso=(t,lbl,v,max,pr)=>`<div class="co-step"><span>${lbl} <span class="muted" style="font-size:12.5px">(${money(pr)} · quedan ${max})</span></span><span class="ctl"><button class="ghost" onclick="coPaso('${t}',-1)">−</button><b>${v}</b><button class="ghost" onclick="coPaso('${t}',1)">+</button></span></div>`;
-  document.getElementById('coPasos').innerHTML=(coSt.maxA>0?paso('A',l.conNinos?'Adultos que pagan':'Personas que pagan',coSt.a,coSt.maxA,lsPrecio(l,'A')):'')+(ninos?paso('N','Niños que pagan',coSt.n,coSt.maxN,lsPrecio(l,'N')):'');
-  const tot=coTotal(), per=coSt.a+coSt.n;
+  const l=lsListado(), ts=lsTarifas(l);
+  const paso=tf=>`<div class="co-step"><span>${esc(ts.length===1?'Personas que pagan':tf.nombre)} <span class="muted" style="font-size:12.5px">(${lsNum(tf.precio)?money(lsNum(tf.precio)):'gratis'} · quedan ${coSt.max[tf.id]})</span></span><span class="ctl"><button class="ghost" onclick="coPaso('${tf.id}',-1)">−</button><b>${coSt.n[tf.id]||0}</b><button class="ghost" onclick="coPaso('${tf.id}',1)">+</button></span></div>`;
+  document.getElementById('coPasos').innerHTML=ts.filter(tf=>coSt.max[tf.id]>0).map(paso).join('');
+  const tot=coTotal(), per=lsSuma(coSt.n);
   document.getElementById('coTotTxt').textContent=`Total a cobrar (${per} persona${per===1?'':'s'})`;
   document.getElementById('coTotal').textContent=money(tot);
   // botones rápidos: justo y billetes redondos por encima del total
@@ -2924,10 +2967,10 @@ document.getElementById('coDa').oninput=coCambio;
 document.getElementById('coDa').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('coOk').click(); } };
 document.getElementById('coOk').onclick=()=>{
   const l=lsListado(); const g=l&&coSt&&(l.gente||[]).find(x=>x.id===coSt.gid); if(!g) return;
-  if(coSt.a+coSt.n<1){ alert('Elige cuántas personas pagan.'); return; }
+  if(lsSuma(coSt.n)<1){ alert('Elige cuántas personas pagan.'); return; }
   const v=document.getElementById('coDa').value;
   if(v!=='' && (parseFloat(v)||0)+0.001<coTotal() && !confirm('Te da menos de lo que cuesta. ¿Marcarlo como cobrado igualmente?')) return;
-  const p=lsPag(l,g); g.pagA=p.A+coSt.a; g.pagN=p.N+coSt.n; g.pagadoEl=new Date().toISOString();
+  const p=lsPag(l,g); for(const k in coSt.n) g.pag[k]=(p[k]||0)+coSt.n[k]; g.pagadoEl=new Date().toISOString();
   save(); closeModal('cobroModal'); renderListados();
   avisoBreve('✅ Cobrado: '+money(coTotal())+(v!==''&&parseFloat(v)>coTotal()?' · cambio '+money(parseFloat(v)-coTotal()):''));
 };
@@ -2939,13 +2982,21 @@ function openListado(id){
   document.getElementById('lsNomL').value=l?l.nombre||'':'';
   document.getElementById('lsFechaL').value=l?l.fecha||'':'';
   document.getElementById('lsFiestaL').value=l?(l.fiestaId||''):'';
-  document.getElementById('lsPrecioL').value=l&&l.precio!=null?l.precio:'';
-  document.getElementById('lsConNinosL').checked=l?!!l.conNinos:false;
-  document.getElementById('lsPrecioNinoL').value=l&&l.precioNino!=null?l.precioNino:'';
+  lsTarDraft=l?lsTarifas(l).map(t=>({id:t.id,nombre:t.nombre,precio:t.precio})):[{id:uid(),nombre:'Adulto',precio:''}];
   document.getElementById('lsNotaL').value=l?l.nota||'':'';
-  lsSyncNinos(); showModal('listadoModal'); setTimeout(()=>document.getElementById('lsNomL').focus(),50);
+  lsPintarTar(); showModal('listadoModal'); setTimeout(()=>document.getElementById('lsNomL').focus(),50);
 }
-function lsSyncNinos(){ const on=document.getElementById('lsConNinosL').checked; const i=document.getElementById('lsPrecioNinoL'); i.disabled=!on; i.style.opacity=on?1:.4; }
+function lsPintarTar(){
+  document.getElementById('lsTarifasL').innerHTML=lsTarDraft.map((t,i)=>`<div class="ls-tar">
+    <input type="text" value="${esc(t.nombre||'')}" placeholder="${i?'Ej: Niño':'Ej: Adulto'}" oninput="lsTarDraft[${i}].nombre=this.value">
+    <input type="number" min="0" step="0.5" value="${t.precio===''||t.precio==null?'':t.precio}" placeholder="€" oninput="lsTarDraft[${i}].precio=this.value">
+    ${i?`<button type="button" class="icon-btn danger" onclick="lsTarDraft.splice(${i},1);lsPintarTar()" title="Quitar tarifa">✕</button>`:'<span></span>'}
+  </div>`).join('');
+  const ya=lsTarDraft.map(t=>normName(t.nombre));
+  document.getElementById('lsTarAddL').innerHTML=`<button type="button" class="ghost" onclick="lsTarNueva('','')">+ Añadir tarifa</button>`+
+    LS_SUGER.filter(([n])=>!ya.includes(normName(n))).map(([n,p])=>`<button type="button" class="ghost" onclick="lsTarNueva('${n}','${p}')">+ ${n}${p===0?' (gratis)':''}</button>`).join('');
+}
+function lsTarNueva(n,p){ lsTarDraft.push({id:uid(),nombre:n,precio:p}); lsPintarTar(); const fs=document.querySelectorAll('#lsTarifasL .ls-tar'); const r=fs[fs.length-1]; if(r) r.querySelector(n?'input[type=number]':'input').focus(); }
 function delListado(id){
   const l=(db.listados||[]).find(x=>x.id===id); if(!l) return;
   const n=(l.gente||[]).length;
@@ -2955,13 +3006,15 @@ function delListado(id){
 function openApuntado(gid){
   const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===gid); if(!g) return;
   lsApEditId=gid;
+  const ts=lsTarifas(l), x=lsGrupo(l,g), p=lsPag(l,g);
   document.getElementById('apVia').innerHTML=Object.entries(LS_VIAS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   document.getElementById('apNombre').value=g.nombre||'';
-  document.getElementById('apAd').value=lsGrupo(l,g).A; document.getElementById('apNi').value=+g.ninos||0;
+  document.getElementById('apTarifas').innerHTML=ts.map((tf,i)=>`<div class="field two">
+    <div><label>${esc(ts.length===1?'Personas':tf.nombre)} <span class="muted">(${lsNum(tf.precio)?money(lsNum(tf.precio)):'gratis'})</span>${i===0?' · contando a la persona':''}</label><input type="number" class="apN" data-t="${tf.id}" min="0" step="1" value="${x[tf.id]}"></div>
+    <div><label>De ellos, ya han pagado</label><input type="number" class="apP" data-t="${tf.id}" min="0" step="1" value="${p[tf.id]}"></div>
+  </div>`).join('');
   document.getElementById('apVia').value=g.via||'otro';
-  document.getElementById('apPagA').value=lsPag(l,g).A; document.getElementById('apPagN').value=lsPag(l,g).N;
   document.getElementById('apNota').value=g.nota||'';
-  document.getElementById('apNiW').style.display=l.conNinos?'':'none'; document.getElementById('apAdLbl').textContent=l.conNinos?'Adultos (contando a la persona)':'Personas (contando a la persona)'; document.getElementById('apPagNW').style.display=l.conNinos?'':'none';
   showModal('apuntadoModal');
 }
 function delApuntado(gid){
@@ -2974,10 +3027,10 @@ function lsPegar(){
   const l=lsListado(); if(!l) return;
   document.getElementById('lsPegarVia').innerHTML=Object.entries(LS_VIAS).map(([k,v])=>`<option value="${k}" ${lsVia===k?'selected':''}>${v}</option>`).join('');
   const ta=document.getElementById('lsPegarTxt'); ta.value=''; document.getElementById('lsPegarInfo').textContent='';
-  ta.oninput=()=>{ const ls=lsPegarLineas(); const per=ls.reduce((s,p)=>s+p.A+p.N,0); document.getElementById('lsPegarInfo').textContent=ls.length?`${ls.length} apuntes · ${per} personas`:''; };
+  ta.oninput=()=>{ const ls=lsPegarLineas(); const per=ls.reduce((s,p)=>s+lsSuma(p.n),0); document.getElementById('lsPegarInfo').textContent=ls.length?`${ls.length} apuntes · ${per} personas`:''; };
   showModal('lsPegarModal'); setTimeout(()=>ta.focus(),50);
 }
-function lsPegarLineas(){ return document.getElementById('lsPegarTxt').value.split(/\r?\n/).map(x=>x.replace(/^\s*(\d+\s*[.)\-:]|[-•*·])\s*/,'').trim()).filter(Boolean).map(lsParse).filter(p=>p.nombre); }
+function lsPegarLineas(){ const l=lsListado(); return document.getElementById('lsPegarTxt').value.split(/\r?\n/).map(x=>x.replace(/^\s*(\d+\s*[.)\-:]|[-•*·])\s*/,'').trim()).filter(Boolean).map(x=>lsParse(x,l)).filter(p=>p.nombre); }
 function lsIngreso(){
   const l=lsListado(); if(!l) return; const t=lsTot(l);
   const falta=Math.round((t.cobrado-t.pasado)*100)/100;
@@ -3006,14 +3059,15 @@ async function lsPdf(){
     const f=(est,tam,col)=>{ doc.setFont('helvetica',est); doc.setFontSize(tam); doc.setTextColor(...(col||[20,20,20])); };
     const fz=(fiestasOrden(c).find(x=>x.id===l.fiestaId)||{}).nombre||'';
     f('bold',17); doc.text(l.nombre||'Listado',M,y); y+=6;
-    f('normal',10,[90,90,90]); doc.text([l.fecha?fmtFecha(l.fecha):'',fz,money(lsPrecio(l,'A'))+' por persona'+(l.conNinos?' · niños '+(lsPrecio(l,'N')?money(lsPrecio(l,'N')):'gratis'):'')].filter(Boolean).join('  ·  '),M,y); y+=5;
-    doc.text(`${t.personas} personas (${t.A} adultos${l.conNinos?', '+t.N+' niños':''}) · ${t.grupos} apuntes · total ${money(t.total)} · cobrado ${money(t.cobrado)} · falta ${money(t.total-t.cobrado)}`,M,y); y+=7;
-    const cols=l.conNinos?[['Pagado',16],['Nombre',72],['Adult.',15],['Niños',15],['Importe',24],['Nota',40]]:[['Pagado',16],['Nombre',82],['Pers.',16],['Importe',26],['Nota',42]];
+    const ts=lsTarifas(l), varias=ts.length>1;
+    f('normal',10,[90,90,90]); const l1=doc.splitTextToSize([l.fecha?fmtFecha(l.fecha):'',fz,lsPrecioTxt(l)].filter(Boolean).join('  ·  '),W-2*M); doc.text(l1,M,y); y+=5*l1.length;
+    const l2=doc.splitTextToSize(`${t.personas} personas${varias?' ('+lsDetalle(l,t.por)+')':''} · ${t.grupos} apuntes · total ${money(t.total)} · cobrado ${money(t.cobrado)} · falta ${money(t.total-t.cobrado)}`,W-2*M); doc.text(l2,M,y); y+=5*l2.length+2;
+    const cols=varias?[['Pagado',16],['Nombre',58],['Personas',48],['Importe',24],['Nota',36]]:[['Pagado',16],['Nombre',82],['Pers.',16],['Importe',26],['Nota',42]];
     const cab=()=>{ doc.setFillColor(30,41,59); doc.rect(M,y,W-2*M,7,'F'); f('bold',9,[255,255,255]); let x=M; cols.forEach(([n,w])=>{ doc.text(n,x+2,y+4.8); x+=w; }); y+=7; };
     cab();
     const gente=(l.gente||[]).slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
     gente.forEach((g,i)=>{
-      const x0=lsGrupo(l,g), p=lsPag(l,g), tot=x0.A+x0.N, pp=p.A+p.N, h=8;
+      const x0=lsGrupo(l,g), p=lsPag(l,g), tot=lsSuma(x0), pp=lsSuma(p), h=8;
       if(y+h>283){ doc.addPage(); y=14; cab(); }
       if(i%2){ doc.setFillColor(243,245,248); doc.rect(M,y,W-2*M,h,'F'); }
       let x=M;
@@ -3025,8 +3079,9 @@ async function lsPdf(){
       if(tot>0&&pp>=tot){ const w=doc.getTextWidth(nom); doc.setDrawColor(120); doc.line(x+2,y+4,x+2+w,y+4); }
       x+=cols[1][1];
       f('normal',10);
-      if(l.conNinos){ doc.text(String(x0.A),x+2,y+5.4); x+=cols[2][1]; doc.text(String(x0.N),x+2,y+5.4); x+=cols[3][1]; }
-      else { doc.text(String(x0.A),x+2,y+5.4); x+=cols[2][1]; }
+      if(varias){ f('normal',8.5); doc.text(doc.splitTextToSize(lsDetalle(l,x0),cols[2][1]-3)[0]||'',x+2,y+5.4); f('normal',10); }
+      else doc.text(String(tot),x+2,y+5.4);
+      x+=cols[2][1];
       const ic=cols[cols.length-2][1]; doc.text(money(lsDebe(l,g)),x+ic-2,y+5.4,{align:'right'}); x+=ic;
       f('normal',8,[90,90,90]); doc.text(doc.splitTextToSize(g.nota||'',cols[cols.length-1][1]-3)[0]||'',x+2,y+5.4);
       y+=h;
@@ -3863,26 +3918,33 @@ document.addEventListener('click',e=>{ if(!e.target.closest('#catPop') && !e.tar
 document.getElementById('mReciboFile').onchange=function(){ handleReciboFile(this); };
 
 /* Listados: guardar listado, apuntado y lista pegada */
-document.getElementById('lsConNinosL').onchange=lsSyncNinos;
 document.getElementById('lsGuardarL').onclick=()=>{
   const c=activa(); if(!c) return;
   const nombre=document.getElementById('lsNomL').value.trim(); if(!nombre){ alert('Ponle un nombre al listado (ej: Comida de Halloween).'); return; }
-  const pr=document.getElementById('lsPrecioL').value, prn=document.getElementById('lsPrecioNinoL').value;
+  const tar=lsTarDraft.map(t=>({id:t.id,nombre:String(t.nombre||'').trim(),precio:lsNum(t.precio)}));
+  if(tar.some(t=>!t.nombre)){ alert('Ponle nombre a todas las tarifas (ej: Adulto, Niño, Solo postre…).'); return; }
+  const nn=tar.map(t=>normName(t.nombre)); if(nn.some((n,i)=>nn.indexOf(n)!==i)){ alert('Hay dos tarifas con el mismo nombre.'); return; }
+  const old=lsEditId?db.listados.find(x=>x.id===lsEditId):null;
+  if(old){
+    const quitadas=lsTarifas(old).filter(t=>!tar.some(x=>x.id===t.id));
+    for(const t of quitadas){ const n=(old.gente||[]).reduce((s,g)=>s+lsGrupo(old,g)[t.id],0);
+      if(n){ alert(`No se puede quitar la tarifa «${t.nombre}»: hay ${n} persona${n===1?'':'s'} apuntada${n===1?'':'s'} con ella.\nCámbialas antes con ✏️ en cada apunte.`); return; } }
+  }
   const data={nombre, fecha:document.getElementById('lsFechaL').value, fiestaId:document.getElementById('lsFiestaL').value,
-    precio:pr===''?'':Math.max(0,parseFloat(pr)||0), conNinos:document.getElementById('lsConNinosL').checked, precioNino:prn===''?'':Math.max(0,parseFloat(prn)||0),
-    nota:document.getElementById('lsNotaL').value.trim(), mod:new Date().toISOString()};
-  if(lsEditId){ Object.assign(db.listados.find(x=>x.id===lsEditId),data); }
+    tarifas:tar, nota:document.getElementById('lsNotaL').value.trim(), mod:new Date().toISOString()};
+  if(old){ Object.assign(old,data); (old.gente||[]).forEach(g=>{ for(const k in g.n) if(!tar.some(t=>t.id===k)){ delete g.n[k]; delete g.pag[k]; } }); }
   else { const n=Object.assign({id:uid(),comisionId:c.id,gente:[],creado:new Date().toISOString()},data); db.listados.push(n); lsSel=n.id; lsSearch=''; lsFiltro=''; }
   save(); closeModal('listadoModal'); render();
 };
 document.getElementById('apGuardar').onclick=()=>{
   const l=lsListado(); const g=l&&(l.gente||[]).find(x=>x.id===lsApEditId); if(!g) return;
   const nombre=document.getElementById('apNombre').value.trim(); if(!nombre){ alert('Escribe el nombre.'); return; }
-  const A=Math.max(0,parseInt(document.getElementById('apAd').value)||0), N=l.conNinos?Math.max(0,parseInt(document.getElementById('apNi').value)||0):(+g.ninos||0);
-  if(A+(l.conNinos?N:0)<1){ alert('Tiene que haber al menos una persona.'); return; }
+  const n={}, pag={};
+  document.querySelectorAll('#apTarifas .apN').forEach(i=>{ const v=lsInt(i.value); if(v) n[i.dataset.t]=v; });
+  document.querySelectorAll('#apTarifas .apP').forEach(i=>{ const v=Math.min(lsInt(i.value),n[i.dataset.t]||0); if(v) pag[i.dataset.t]=v; });
+  if(lsSuma(n)<1){ alert('Tiene que haber al menos una persona.'); return; }
   const antes=lsPagado(l,g);
-  Object.assign(g,{nombre,adultos:A,ninos:N,via:document.getElementById('apVia').value,nota:document.getElementById('apNota').value.trim(),
-    pagA:Math.min(A,Math.max(0,parseInt(document.getElementById('apPagA').value)||0)), pagN:Math.min(N,Math.max(0,parseInt(document.getElementById('apPagN').value)||0))});
+  Object.assign(g,{nombre,n,pag,via:document.getElementById('apVia').value,nota:document.getElementById('apNota').value.trim()});
   if(lsPagado(l,g)>antes) g.pagadoEl=new Date().toISOString();
   save(); closeModal('apuntadoModal'); renderListados();
 };
@@ -3894,7 +3956,7 @@ document.getElementById('lsPegarOk').onclick=()=>{
   let lista=ls;
   if(rep.length){ const r=confirm(`${rep.length} ya estaban apuntados: ${rep.map(p=>p.nombre).slice(0,6).join(', ')}${rep.length>6?'…':''}.\n\nAceptar = no repetirlos · Cancelar = apuntarlos igualmente`); if(r) lista=ls.filter(p=>!ya.has(normName(p.nombre))); }
   if(!Array.isArray(l.gente)) l.gente=[];
-  lista.forEach(p=>l.gente.push({id:uid(),nombre:p.nombre,adultos:l.conNinos?p.A:p.A+p.N,ninos:l.conNinos?p.N:0,via,nota:'',pagA:0,pagN:0,metodo:'',creado:new Date().toISOString()}));
+  lista.forEach(p=>{ const n={}; for(const k in p.n) if(p.n[k]) n[k]=p.n[k]; l.gente.push({id:uid(),nombre:p.nombre,n,pag:{},via,nota:'',creado:new Date().toISOString()}); });
   save(); closeModal('lsPegarModal'); renderListados(); avisoBreve(`✅ ${lista.length} apuntes añadidos`);
 };
 
