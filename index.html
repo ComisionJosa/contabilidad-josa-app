@@ -2790,7 +2790,7 @@ function lsImporte(l,o){ return Math.round(lsTarifas(l).reduce((s,t)=>s+(o[t.id]
 function lsDebe(l,g){ return lsImporte(l,lsGrupo(l,g)); }
 function lsPagado(l,g){ return lsImporte(l,lsPag(l,g)); }
 function lsEstado(l,g){ const per=lsSuma(lsGrupo(l,g)), pp=lsSuma(lsPag(l,g)); return per>0&&pp>=per?'pag':(pp>0?'med':'no'); }
-function lsPlural(nom,n){ nom=String(nom||'').toLowerCase(); if(n===1||/\s/.test(nom)) return nom; return /[aeiouáéíóú]$/.test(nom)?nom+'s':nom+'es'; }
+function lsPlural(nom,n){ nom=String(nom||'').toLowerCase(); if(n===1||/\s/.test(nom)||/s$/.test(nom)) return nom; return /[aeiouáéíóú]$/.test(nom)?nom+'s':nom+'es'; }
 /* «3 adultos · 1 niño · 1 solo postre y café» */
 function lsDetalle(l,o){
   const ts=lsTarifas(l);
