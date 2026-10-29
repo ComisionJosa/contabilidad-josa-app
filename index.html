@@ -442,6 +442,12 @@
     body.imprimiendo .hoja .bloque{break-inside:avoid;page-break-inside:avoid}
     body.imprimiendo .hoja .firmas{break-inside:avoid;page-break-inside:avoid}
   }
+  .stat.dinero{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+  .stat.dinero .v{font-size:32px}
+  .stat.dinero .reparto{display:flex;flex-direction:column;gap:4px;margin-top:4px;cursor:pointer}
+  .stat.dinero .reparto div{display:flex;justify-content:space-between;gap:10px;font-size:15px}
+  .stat.dinero .reparto span{color:var(--muted)} .stat.dinero .reparto b{font-size:16px}
+  .stat.inicial .v{font-size:19px;color:var(--muted)}
   .stat.clic{cursor:pointer;transition:border-color .15s,transform .15s}
   .stat.clic:hover{border-color:var(--acc);transform:translateY(-1px)}
   .stat.clic .ver{font-size:11.5px;color:var(--muted);margin-top:auto}
@@ -1380,10 +1386,10 @@ function renderResumen(){
   { const a=avisosTareas(); if(a.urgentes) html+=`<div class="banner ${a.atrasadas?'warn':''}" style="cursor:pointer" onclick="goTab('tareas')">⏰ ${a.atrasadas?`<b>${a.atrasadas} tarea${a.atrasadas===1?'':'s'} atrasada${a.atrasadas===1?'':'s'}</b>`:''}${a.atrasadas&&a.semana?' y ':''}${a.semana?`<b>${a.semana} para esta semana</b>`:''}: ${esc(a.lista.slice(0,3).map(x=>x.titulo).join(' · '))}${a.lista.length>3?'…':''} <span style="margin-left:auto;font-weight:700">Ver tareas →</span></div>`; }
   if(locked)html+=`<div class="banner warn">🔒 Comisión cerrada (solo lectura). No se pueden añadir ni modificar movimientos. Puedes reabrirla en la pestaña Comisiones.</div>`;
   html+=`<div class="grid cols-4" style="margin-bottom:18px">
-    <div class="card stat"><span class="k">Saldo inicial</span><span class="v money">${money(c.saldoInicial)}</span></div>
+    <div class="card stat dinero"><span class="k">💰 Dinero de la comisión</span><span class="v money ${t.caja>=0?'pos':'neg'}">${money(t.caja)}</span>${(()=>{ const fs=fondosDe(c.id).filter(f=>!f.devuelto); const tf=fs.reduce((x,f)=>x+fdImporte(f),0); return tf>0?`<div class="reparto" onclick="goTab('cajas')" title="Ver en Cajas"><div><span>👜 Fondo de cambio</span><b>${money(tf)}</b></div><div><span>🏦 En el banco</span><b>${money(t.caja-tf)}</b></div></div>`:''; })()}</div>
     <div class="card stat"><span class="k">Ingresos</span><span class="v money pos">${money(t.ing)}</span></div>
     <div class="card stat"><span class="k">Gastos</span><span class="v money neg">${money(t.gas)}</span></div>
-    <div class="card stat"><span class="k">💰 Dinero de la comisión</span><span class="v money ${t.caja>=0?'pos':'neg'}">${money(t.caja)}</span>${(()=>{ const fs=fondosDe(c.id).filter(f=>!f.devuelto); const tf=fs.reduce((x,f)=>x+fdImporte(f),0); return tf>0?`<span class="muted" style="font-size:12.5px;margin-top:4px;cursor:pointer" onclick="goTab('cajas')" title="Ver en Cajas">👜 ${money(tf)} en el fondo de cambio · 🏦 ${money(t.caja-tf)} el resto</span>`:''; })()}</div>
+    <div class="card stat inicial"><span class="k">Saldo inicial</span><span class="v money">${money(c.saldoInicial)}</span><span class="muted" style="font-size:12px">Lo que había al empezar la comisión</span></div>
   </div>
   ${t.pendiente>0?`<div class="banner warn">⏳ Pendiente de pagar: <b>${money(t.pendiente)}</b> — reservado pero aún NO descontado de la caja.</div>`:''}
   <div class="section-title"><h2>Balance por fiesta</h2></div>
