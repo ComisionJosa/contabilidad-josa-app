@@ -284,8 +284,7 @@
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
   body.solo-lectura .ro-badge{display:inline-block}
   /* App del móvil: en Movimientos solo el filtro de fiesta (el resto, en el ordenador) */
-  .app-movil .tb-movs > :not(#fFiesta):not(.pill):not(.primary):not(.tk-movs){display:none !important}
-  .app-movil .tb-movs .tk-movs{flex:1 1 100%}
+  .app-movil .tb-movs > :not(#fFiesta):not(.pill):not(.primary){display:none !important}
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
@@ -295,7 +294,6 @@
   .tk-estado.ok{border-color:var(--green)} .tk-estado.mal{border-color:#f5cf7a}
   .mv-buscar{display:flex;gap:8px;align-items:center;margin:0 0 10px}
   .mv-buscar input{flex:1;font-size:16px;padding:11px 14px;border-radius:10px}
-  body.solo-lectura .tk-movs{display:none !important}
   /* ---- Cobro con cambio (Listados) ---- */
   .co-modal{max-width:440px}
   .co-step{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
@@ -1469,7 +1467,7 @@ function renderMovs(){
     <span class="pill">${movs.length} mov.</span>
     ${(f.tipo||f.texto||f.estado||f.categoria||f.metodo||f.desde||f.hasta)?'<button onclick="limpiarFiltros()">✖ Limpiar filtros</button>':''}
     <button onclick="openCategorias()">🏷️ Categorías</button>
-    ${locked?'':'<button class="tk-movs" onclick="ticketDesdeLista()" title="Haz una foto del ticket y se rellena el gasto solo">📷 Desde ticket</button><button class="primary" onclick="openMov()">+ Añadir</button>'}
+    ${locked?'':'<button class="primary" onclick="openMov()">+ Añadir</button>'}
   </div>`;
   if(!movs.length){
     html+=`<div class="card empty">${f.texto?'No hay nada con «'+esc(f.texto)+'».':'No hay movimientos que mostrar.'}${locked?'':'<br><button class="primary" style="margin-top:12px" onclick="openMov()">+ Añadir el primero</button>'}</div>`;
@@ -2073,7 +2071,6 @@ function cargarTesseract(){
     sc.onload=()=>ok(); sc.onerror=()=>{ tesseractCargando=null; ko(new Error('sin conexión')); }; document.head.appendChild(sc); });
   return tesseractCargando;
 }
-function ticketDesdeLista(){ openMov(); const i=document.getElementById('mTicketFile'); i.value=''; i.click(); }
 function ticketEstado(html,cls){ const el=document.getElementById('mTicketEstado'); el.style.display=html?'':'none'; el.className='tk-estado '+(cls||''); el.innerHTML=html||''; }
 const TK_TIENDAS=['MAKRO','MERCADONA','CARREFOUR','ALCAMPO','EROSKI','LIDL','ALDI','DIA','CONSUM','SIMPLY','SPAR','AHORRAMAS','BM','GADIS','FROIZ','COVIRAN','HIPERCOR','EL CORTE INGLES','LEROY MERLIN','BRICOMART','BRICO DEPOT','BAUHAUS','IKEA','DECATHLON','ACTION','TEDI','PRIMAPRIX','NORAUTO','AMAZON','SUPERCOR','CASH FRESH','GM CASH','TRANSGOURMET','CASH IFA','PRINCIPE PIO'];
 function tkImportes(linea){
