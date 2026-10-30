@@ -284,10 +284,24 @@
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
   body.solo-lectura .ro-badge{display:inline-block}
   /* App del móvil: en Movimientos solo el filtro de fiesta (el resto, en el ordenador) */
-  .app-movil .tb-movs > :not(#fFiesta):not(.pill):not(.primary){display:none !important}
+  .app-movil .tb-movs > :not(#fFiesta):not(.pill):not(.primary):not(.sindoc-btn){display:none !important}
+  .app-movil .tb-movs .sindoc-btn{flex:1 1 100%}
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  /* ---- Gastos sin ticket y novedades (modo amigos) ---- */
+  .sindoc-btn{border-color:#f5cf7a !important;font-weight:700}
+  .sindoc-btn.on{background:#f5cf7a !important;color:#3a2a00 !important}
+  .adj-no.falta{color:#c98a00;border:1px dashed #f5cf7a !important}
+  .banner.filtro-aviso{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .filtro-aviso button{margin-left:auto}
+  body.solo-lectura .sindoc-btn{display:none !important}
+  .nv-tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--acc);color:#fff;margin-left:6px;vertical-align:middle}
+  .nv-tag.cambio{background:#c98a00}
+  .nv-lista{margin:8px 0 2px;display:grid;gap:4px;font-size:13.5px}
+  .nv-lista div{display:flex;gap:8px;align-items:baseline}
+  .nv-lista .money{margin-left:auto;white-space:nowrap;font-weight:700}
+  .nv-acc{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   /* ---- Leer ticket (OCR) y buscador de movimientos ---- */
   .tk-btn{width:100%;padding:12px;font-size:15px;font-weight:700;border:1px dashed var(--acc);background:transparent;color:var(--acc);border-radius:10px;cursor:pointer}
   .tk-row{display:flex;gap:8px} .tk-cam,.tk-mv{display:none}
@@ -1399,7 +1413,7 @@ function renderComiSelect(){
 
 function renderResumen(){
   const c=activa();const t=totalesComision(c);const locked=c.cerrada;
-  let html='';
+  let html=soloLectura?nvBanner():'';
   { const a=avisosTareas(); if(a.urgentes) html+=`<div class="banner ${a.atrasadas?'warn':''}" style="cursor:pointer" onclick="goTab('tareas')">⏰ ${a.atrasadas?`<b>${a.atrasadas} tarea${a.atrasadas===1?'':'s'} atrasada${a.atrasadas===1?'':'s'}</b>`:''}${a.atrasadas&&a.semana?' y ':''}${a.semana?`<b>${a.semana} para esta semana</b>`:''}: ${esc(a.lista.slice(0,3).map(x=>x.titulo).join(' · '))}${a.lista.length>3?'…':''} <span style="margin-left:auto;font-weight:700">Ver tareas →</span></div>`; }
   if(locked)html+=`<div class="banner warn">🔒 Comisión cerrada (solo lectura). No se pueden añadir ni modificar movimientos. Puedes reabrirla en la pestaña Comisiones.</div>`;
   html+=`<div class="grid cols-4" style="margin-bottom:18px">
@@ -1452,6 +1466,10 @@ function renderMovs(){
   if(f.metodo)movs=movs.filter(m=>usaMetodo(m,f.metodo));
   if(f.desde)movs=movs.filter(m=>(m.fecha||'')>=f.desde);
   if(f.hasta)movs=movs.filter(m=>(m.fecha||'')<=f.hasta);
+  const sinDocN=movsDe(c.id).filter(m=>(!f.fiesta||m.fiestaId===f.fiesta)&&faltaTicket(m)).length;
+  if(f.sindoc)movs=movs.filter(faltaTicket);
+  const nv=soloLectura?novedades():null;
+  if(f.novedades&&nv)movs=movs.filter(m=>nv.nuevos.has(m.id)||nv.cambiados.has(m.id));
   movs.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
   const fName=id=>(c.fiestas.find(x=>x.id===id)||{}).nombre||'—';
   let ing=0,gas=0;movs.forEach(m=>{if(m.tipo==='ingreso')ing+=+m.importe;else gas+=+m.importe;});
@@ -1471,12 +1489,15 @@ function renderMovs(){
     <span class="pill">Gastos: <b class="money neg">${money(gas)}</b></span>
     <span class="pill">Resultado: <b class="money ${ing-gas>=0?'pos':'neg'}">${money(ing-gas)}</b></span>
     <span class="pill">${movs.length} mov.</span>
-    ${(f.tipo||f.texto||f.estado||f.categoria||f.metodo||f.desde||f.hasta)?'<button onclick="limpiarFiltros()">✖ Limpiar filtros</button>':''}
+    ${(f.tipo||f.texto||f.estado||f.categoria||f.metodo||f.desde||f.hasta||f.sindoc||f.novedades)?'<button onclick="limpiarFiltros()">✖ Limpiar filtros</button>':''}
+    ${(sinDocN||f.sindoc)&&!locked?`<button class="sindoc-btn ${f.sindoc?'on':''}" onclick="state.filtro.sindoc=!state.filtro.sindoc;renderMovs()" title="Gastos que todavía no tienen foto del ticket ni factura">📎 Sin ticket: ${sinDocN}</button>`:''}
     <button onclick="openCategorias()">🏷️ Categorías</button>
     ${locked?'':'<button class="primary" onclick="openMov()">+ Añadir</button>'}
   </div>`;
+  if(f.sindoc) html+=`<div class="banner warn filtro-aviso"><span>📎 <b>Gastos sin ticket ni factura</b>${sinDocN?` (${sinDocN})`:''}. Pulsa <b>＋ Adjuntar</b> para hacerle la foto, o <b>🚫 No hay</b> si ese gasto no tiene ticket.</span><button onclick="state.filtro.sindoc=false;renderMovs()">✕ Ver todos</button></div>`;
+  if(f.novedades&&nv) html+=`<div class="banner filtro-aviso"><span>🆕 Solo lo nuevo o cambiado desde tu última visita.</span><button onclick="state.filtro.novedades=false;renderMovs()">✕ Ver todos</button></div>`;
   if(!movs.length){
-    html+=`<div class="card empty">${f.texto?'No hay nada con «'+esc(f.texto)+'».':'No hay movimientos que mostrar.'}${locked?'':'<br><button class="primary" style="margin-top:12px" onclick="openMov()">+ Añadir el primero</button>'}</div>`;
+    html+=`<div class="card empty">${f.sindoc?'🎉 Todos los gastos tienen su ticket o factura.':f.texto?'No hay nada con «'+esc(f.texto)+'».':'No hay movimientos que mostrar.'}${locked?'':'<br><button class="primary" style="margin-top:12px" onclick="openMov()">+ Añadir el primero</button>'}</div>`;
   }else{
     html+=`<div class="card" style="padding:0;overflow:auto"><table class="tbl-movs"><thead><tr><th>Fecha</th><th>Fiesta</th><th>Tipo</th><th>Categoría</th><th>Concepto</th><th>Pago</th><th style="text-align:right">Importe</th><th style="text-align:center">📎 Docs</th><th></th></tr></thead><tbody>`;
     movs.forEach(m=>{
@@ -1485,12 +1506,14 @@ function renderMovs(){
         <td>${EMO[fiestaTipo(c,m.fiestaId)]||'🎪'} ${esc(fName(m.fiestaId))}</td>
         <td><span class="tag ${m.tipo==='ingreso'?'in':'out'}">${m.tipo==='ingreso'?'Ingreso':'Gasto'}</span></td>
         <td>${esc(m.categoria||'')}</td>
-        <td>${esc(m.concepto||'')}${m.proveedor?`<br><span class="muted" style="font-size:12px">${esc(m.proveedor)}</span>`:''}</td>
+        <td>${esc(m.concepto||'')}${nv&&nv.nuevos.has(m.id)?'<span class="nv-tag">🆕 Nuevo</span>':nv&&nv.cambiados.has(m.id)?'<span class="nv-tag cambio">✏️ Cambiado</span>':''}${m.proveedor?`<br><span class="muted" style="font-size:12px">${esc(m.proveedor)}</span>`:''}</td>
         <td class="muted">${esc(metodoTxt(m))}</td>
         <td class="amt money ${m.tipo==='ingreso'?'pos':'neg'}">${m.tipo==='gasto'?'-':''}${money(m.importe)}${(m.tipo==='gasto'&&(m.estadoPago==='pendiente'||m.estadoPago==='parcial'))?`<br><span class="muted" style="font-size:11px;font-weight:600">${m.estadoPago==='pendiente'?'⏳ sin pagar':'½ pagado '+money(+m.pagado||0)}</span>`:''}</td>
         <td style="white-space:nowrap;text-align:center">${adjuntosDe(m).length
           ? `<button class="icon-btn adj-si" onclick="openDocs('${m.id}')" title="Ver, añadir o quitar documentos">📎 ${adjuntosDe(m).length}</button>`
-          : (locked?'<span class="muted">—</span>':`<button class="icon-btn ghost adj-no" onclick="adjuntarRapido('${m.id}')" title="Adjuntar factura, ticket o foto">＋ Adjuntar</button>`)}</td>
+          : (locked?'<span class="muted">—</span>'
+            : m.tipo==='gasto'&&m.sinTicket ? `<button class="icon-btn ghost adj-no" onclick="marcarSinTicket('${m.id}',false)" title="Marcado como gasto sin ticket. Pulsa para quitar la marca">🚫 Sin ticket</button>`
+            : `<button class="icon-btn ghost adj-no ${m.tipo==='gasto'?'falta':''}" onclick="adjuntarRapido('${m.id}')" title="Adjuntar factura, ticket o foto">＋ Adjuntar</button>${f.sindoc?`<button class="icon-btn ghost adj-no" onclick="marcarSinTicket('${m.id}',true)" title="Este gasto no tiene ticket: dejar de avisar">🚫 No hay</button>`:''}`)}</td>
         <td style="white-space:nowrap">${locked?'':`<button class="icon-btn ghost" onclick="openMov('${m.id}')">✏️</button><button class="icon-btn ghost" onclick="delMov('${m.id}')">🗑️</button>`}</td>
       </tr>`;
     });
@@ -1505,6 +1528,44 @@ function renderMovs(){
   document.getElementById('fMetodo').onchange=e=>{state.filtro.metodo=e.target.value;renderMovs();};
   document.getElementById('fDesde').onchange=e=>{state.filtro.desde=e.target.value;renderMovs();};
   document.getElementById('fHasta').onchange=e=>{state.filtro.hasta=e.target.value;renderMovs();};
+}
+/* Gasto al que le falta el ticket/factura (salvo que se haya marcado que no lo tiene) */
+function faltaTicket(m){ return m.tipo==='gasto' && !adjuntosDe(m).length && !m.sinTicket; }
+function marcarSinTicket(id,v){
+  const m=db.movimientos.find(x=>x.id===id); if(!m) return;
+  if(v) m.sinTicket=true; else delete m.sinTicket;
+  save(); render(); avisoBreve(v?'🚫 Marcado: este gasto no tiene ticket':'📎 Quitada la marca de «sin ticket»');
+}
+/* ---- Novedades para el modo amigos: qué se ha apuntado o cambiado desde su última visita (se guarda en su móvil) ---- */
+const NV_KEY='cf_novedades_v1';
+function nvFirma(m){ return [m.comisionId,m.tipo,+m.importe||0,m.fecha||'',m.concepto||'',m.categoria||'',m.estadoPago||'',+m.pagado||0].join('|'); }
+function nvGuardarVisto(){
+  const sg={}; db.movimientos.forEach(m=>{ sg[m.id]=nvFirma(m); });
+  try{ localStorage.setItem(NV_KEY,JSON.stringify({ts:new Date().toISOString(),s:sg})); }catch(_){}
+}
+function novedades(){
+  if(!db.movimientos.length) return null;
+  let base=null; try{ base=JSON.parse(localStorage.getItem(NV_KEY)); }catch(_){}
+  if(!base||!base.s){ nvGuardarVisto(); return null; }   // primera vez: no hay "antes", empezamos a contar desde ahora
+  const c=activa(), nuevos=new Set(), cambiados=new Set(), ids=new Set();
+  movsDe(c.id).forEach(m=>{ ids.add(m.id); if(!(m.id in base.s)) nuevos.add(m.id); else if(base.s[m.id]!==nvFirma(m)) cambiados.add(m.id); });
+  const borrados=Object.keys(base.s).filter(id=>!ids.has(id) && String(base.s[id]).split('|')[0]===c.id && !db.movimientos.some(m=>m.id===id)).length;
+  return {desde:base.ts,nuevos,cambiados,borrados,total:nuevos.size+cambiados.size+borrados};
+}
+function nvVisto(){ nvGuardarVisto(); state.filtro.novedades=false; render(); }
+function nvVerTodo(){ state.tab='movs'; state.filtro.novedades=true; render(); window.scrollTo(0,0); }
+function nvBanner(){
+  const nv=novedades(); if(!nv||!nv.total) return '';
+  const d=new Date(nv.desde), hoy=new Date(), ayer=new Date(Date.now()-864e5);
+  const cuando=d.toDateString()===hoy.toDateString()?'hoy a las '+d.toTimeString().slice(0,5):d.toDateString()===ayer.toDateString()?'ayer':['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][d.getDay()]+' '+fmtFecha(d.toISOString().slice(0,10));
+  const pl=(n,a,b)=>n+' '+(n===1?a:b), partes=[];
+  if(nv.nuevos.size) partes.push('<b>'+pl(nv.nuevos.size,'movimiento nuevo','movimientos nuevos')+'</b>');
+  if(nv.cambiados.size) partes.push(pl(nv.cambiados.size,'cambiado','cambiados'));
+  if(nv.borrados) partes.push(pl(nv.borrados,'borrado','borrados'));
+  const lista=movsDe(activa().id).filter(m=>nv.nuevos.has(m.id)||nv.cambiados.has(m.id)).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  return `<div class="banner" style="display:block">🆕 <b>Desde tu última visita</b> (${cuando}): ${partes.join(' · ')}.
+    ${lista.length?`<div class="nv-lista">${lista.slice(0,6).map(m=>`<div><span class="muted" style="font-size:12px">${fmtFecha(m.fecha)}</span><span>${esc(m.concepto||'(sin concepto)')}${nv.cambiados.has(m.id)?' <span class="nv-tag cambio">✏️</span>':''}</span><span class="money ${m.tipo==='ingreso'?'pos':'neg'}">${m.tipo==='gasto'?'-':'+'}${money(m.importe)}</span></div>`).join('')}${lista.length>6?`<div class="muted">y ${lista.length-6} más…</div>`:''}</div>`:''}
+    <div class="nv-acc">${lista.length?'<button class="primary" onclick="nvVerTodo()">Ver en movimientos</button>':''}<button onclick="nvVisto()">👍 Visto</button></div></div>`;
 }
 function fiestaTipo(c,id){const f=c.fiestas.find(x=>x.id===id);return f?f.tipo:'';}
 
@@ -1983,7 +2044,7 @@ function delComi(id){const c=db.comisiones.find(x=>x.id===id);if(!c)return;const
   db.comisiones=db.comisiones.filter(x=>x.id!==id);db.movimientos=db.movimientos.filter(m=>m.comisionId!==id);
   papeleraPush('comision', c.nombre, {comision:c, movimientos:movs});
   if(db.activaId===id)db.activaId=db.comisiones[0]?db.comisiones[0].id:null;save();render();}
-function limpiarFiltros(){const fi=state.filtro.fiesta;state.filtro={fiesta:fi,tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:''};renderMovs();}
+function limpiarFiltros(){const fi=state.filtro.fiesta;state.filtro={fiesta:fi,tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:'',sindoc:false,novedades:false};renderMovs();}
 /* ---- Exportar facturas de una fiesta: ZIP con una carpeta y todos los documentos + listado ---- */
 let jsZipCargando=null;
 function cargarJSZip(){
