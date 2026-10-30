@@ -284,10 +284,18 @@
   .ro-badge{display:none;background:#2a1f3d;border:1px solid #4b3a6b;color:#e3d6ff;border-radius:20px;padding:5px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
   body.solo-lectura .ro-badge{display:inline-block}
   /* App del móvil: en Movimientos solo el filtro de fiesta (el resto, en el ordenador) */
-  .app-movil .tb-movs > :not(#fFiesta):not(.pill):not(.primary){display:none !important}
+  .app-movil .tb-movs > :not(#fFiesta):not(.pill):not(.primary):not(.tk-movs){display:none !important}
+  .app-movil .tb-movs .tk-movs{flex:1 1 100%}
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  /* ---- Leer ticket (OCR) y buscador de movimientos ---- */
+  .tk-btn{width:100%;padding:12px;font-size:15px;font-weight:700;border:1px dashed var(--acc);background:transparent;color:var(--acc);border-radius:10px;cursor:pointer}
+  .tk-estado{margin-top:8px;padding:9px 11px;border-radius:9px;font-size:13.5px;line-height:1.45;border:1px solid var(--line)}
+  .tk-estado.ok{border-color:var(--green)} .tk-estado.mal{border-color:#f5cf7a}
+  .mv-buscar{display:flex;gap:8px;align-items:center;margin:0 0 10px}
+  .mv-buscar input{flex:1;font-size:16px;padding:11px 14px;border-radius:10px}
+  body.solo-lectura .tk-movs{display:none !important}
   /* ---- Cobro con cambio (Listados) ---- */
   .co-modal{max-width:440px}
   .co-step{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
@@ -538,6 +546,11 @@
 <!-- MODAL MOVIMIENTO -->
 <div class="modal-bg" id="movModal"><div class="modal">
   <h3 id="movModalTitle">Nuevo movimiento</h3>
+  <div class="field">
+    <input type="file" id="mTicketFile" accept="image/*" style="display:none" onchange="leerTicket(this)">
+    <button type="button" class="tk-btn" onclick="const i=document.getElementById('mTicketFile');i.value='';i.click()">📷 Foto del ticket → rellenar solo</button>
+    <div id="mTicketEstado" class="tk-estado" style="display:none"></div>
+  </div>
   <div class="field"><label>Tipo</label>
     <div class="seg" id="tipoSeg">
       <button type="button" data-tipo="gasto">➖ Gasto</button>
@@ -1419,11 +1432,17 @@ function catBox(title,arr,cls){
     arr.map(([k,v])=>`<div class="catrow"><span class="name">${esc(k)}</span><span class="val money ${cls}">${money(v)}</span></div><div class="bar"><span style="width:${(v/max*100).toFixed(1)}%;background:${color}"></span></div>`).join('')+`</div>`;
 }
 
+function mvTextoBusca(c,m){
+  const imp=+m.importe||0, fi=(c.fiestas.find(x=>x.id===m.fiestaId)||{}).nombre||'';
+  return normName([m.concepto,m.categoria,m.proveedor,m.nota,fi,metodoTxt(m),m.tipo,m.tipo==='gasto'?(m.estadoPago||'pagado'):'',
+    m.fecha,fmtFecha(m.fecha),String(imp),imp.toFixed(2),imp.toFixed(2).replace('.',','),
+    adjuntosDe(m).map(a=>a.nombre||'').join(' ')].join(' | '));
+}
 function renderMovs(){
   const c=activa();const locked=c.cerrada;let movs=movsDe(c.id).slice();const f=state.filtro;
   if(f.fiesta)movs=movs.filter(m=>m.fiestaId===f.fiesta);
   if(f.tipo)movs=movs.filter(m=>m.tipo===f.tipo);
-  if(f.texto){const q=f.texto.toLowerCase();movs=movs.filter(m=>((m.concepto||'')+' '+(m.categoria||'')+' '+(m.proveedor||'')).toLowerCase().includes(q));}
+  if(f.texto){const qs=normName(f.texto).split(' ').filter(Boolean);movs=movs.filter(m=>{const h=mvTextoBusca(c,m);return qs.every(q=>h.includes(q)||h.includes(q.replace(',','.')));});}
   if(f.estado)movs=movs.filter(m=>m.tipo==='gasto' && (m.estadoPago||'pagado')===f.estado);
   if(f.categoria)movs=movs.filter(m=>(m.categoria||'')===f.categoria);
   if(f.metodo)movs=movs.filter(m=>usaMetodo(m,f.metodo));
@@ -1434,6 +1453,7 @@ function renderMovs(){
   let ing=0,gas=0;movs.forEach(m=>{if(m.tipo==='ingreso')ing+=+m.importe;else gas+=+m.importe;});
   let html='';
   if(locked)html+=`<div class="banner warn">🔒 Comisión cerrada (solo lectura).</div>`;
+  html+=`<div class="mv-buscar"><input type="search" id="fTexto" placeholder="🔎 Buscar: concepto, tienda, importe, fecha, nota…" value="${esc(f.texto)}" autocomplete="off">${f.texto?'<button onclick="state.filtro.texto=\'\';renderMovs()" title="Borrar búsqueda">✕</button>':''}</div>`;
   html+=`<div class="toolbar tb-movs">
     <select id="fFiesta"><option value="">Todas las fiestas</option>${fiestasOrden(c).map(x=>`<option value="${x.id}" ${f.fiesta===x.id?'selected':''}>${EMO[x.tipo]||'🎪'} ${esc(x.nombre)}</option>`).join('')}</select>
     <select id="fTipo"><option value="">Todo</option><option value="ingreso" ${f.tipo==='ingreso'?'selected':''}>Solo ingresos</option><option value="gasto" ${f.tipo==='gasto'?'selected':''}>Solo gastos</option></select>
@@ -1442,7 +1462,6 @@ function renderMovs(){
     <select id="fMetodo"><option value="">Todo método</option>${['Banco','Bizum','Efectivo'].map(x=>`<option value="${x}" ${f.metodo===x?'selected':''}>${x}</option>`).join('')}</select>
     <label class="muted" style="font-size:12px">Desde <input type="date" id="fDesde" value="${f.desde||''}" style="width:150px"></label>
     <label class="muted" style="font-size:12px">Hasta <input type="date" id="fHasta" value="${f.hasta||''}" style="width:150px"></label>
-    <input type="text" id="fTexto" placeholder="Buscar concepto…" value="${esc(f.texto)}" style="min-width:200px">
     <div class="spacer"></div>
     <span class="pill">Ingresos: <b class="money pos">${money(ing)}</b></span>
     <span class="pill">Gastos: <b class="money neg">${money(gas)}</b></span>
@@ -1450,10 +1469,10 @@ function renderMovs(){
     <span class="pill">${movs.length} mov.</span>
     ${(f.tipo||f.texto||f.estado||f.categoria||f.metodo||f.desde||f.hasta)?'<button onclick="limpiarFiltros()">✖ Limpiar filtros</button>':''}
     <button onclick="openCategorias()">🏷️ Categorías</button>
-    ${locked?'':'<button class="primary" onclick="openMov()">+ Añadir</button>'}
+    ${locked?'':'<button class="tk-movs" onclick="ticketDesdeLista()" title="Haz una foto del ticket y se rellena el gasto solo">📷 Desde ticket</button><button class="primary" onclick="openMov()">+ Añadir</button>'}
   </div>`;
   if(!movs.length){
-    html+=`<div class="card empty">No hay movimientos que mostrar.${locked?'':'<br><button class="primary" style="margin-top:12px" onclick="openMov()">+ Añadir el primero</button>'}</div>`;
+    html+=`<div class="card empty">${f.texto?'No hay nada con «'+esc(f.texto)+'».':'No hay movimientos que mostrar.'}${locked?'':'<br><button class="primary" style="margin-top:12px" onclick="openMov()">+ Añadir el primero</button>'}</div>`;
   }else{
     html+=`<div class="card" style="padding:0;overflow:auto"><table class="tbl-movs"><thead><tr><th>Fecha</th><th>Fiesta</th><th>Tipo</th><th>Categoría</th><th>Concepto</th><th>Pago</th><th style="text-align:right">Importe</th><th style="text-align:center">📎 Docs</th><th></th></tr></thead><tbody>`;
     movs.forEach(m=>{
@@ -1836,7 +1855,7 @@ async function cargarInfoCarpeta(){
 /* ============ MOVIMIENTO ============ */
 function openMov(id){
   if(esCerrada()){alert('🔒 Esta comisión está cerrada (solo lectura).');return;}
-  state.editMovId=id||null;state.lsLink=null;state.cjLink=null;const c=activa();
+  state.editMovId=id||null;state.lsLink=null;state.cjLink=null;const c=activa(); ticketEstado('');
   const acts=fiestasOrden(c).filter(f=>f.activa);
   document.getElementById('mFiesta').innerHTML=acts.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('')||'<option value="">(no hay fiestas activas)</option>';
   if(id){const m=db.movimientos.find(x=>x.id===id);document.getElementById('movModalTitle').textContent='Editar movimiento';setTipo(m.tipo);
@@ -2044,6 +2063,77 @@ async function handleReciboFile(input){
   const files=Array.from(input.files||[]); input.value=''; if(!files.length)return;
   (await subirAdjuntos(files)).forEach(a=>movRecibos.push(a));
   renderReciboBox();
+}
+/* ---- Leer ticket con foto (OCR en el propio navegador, sin claves): la foto queda adjunta y se rellenan importe, fecha y tienda ---- */
+let tesseractCargando=null;
+function cargarTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(tesseractCargando) return tesseractCargando;
+  tesseractCargando=new Promise((ok,ko)=>{ const sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    sc.onload=()=>ok(); sc.onerror=()=>{ tesseractCargando=null; ko(new Error('sin conexión')); }; document.head.appendChild(sc); });
+  return tesseractCargando;
+}
+function ticketDesdeLista(){ openMov(); const i=document.getElementById('mTicketFile'); i.value=''; i.click(); }
+function ticketEstado(html,cls){ const el=document.getElementById('mTicketEstado'); el.style.display=html?'':'none'; el.className='tk-estado '+(cls||''); el.innerHTML=html||''; }
+const TK_TIENDAS=['MAKRO','MERCADONA','CARREFOUR','ALCAMPO','EROSKI','LIDL','ALDI','DIA','CONSUM','SIMPLY','SPAR','AHORRAMAS','BM','GADIS','FROIZ','COVIRAN','HIPERCOR','EL CORTE INGLES','LEROY MERLIN','BRICOMART','BRICO DEPOT','BAUHAUS','IKEA','DECATHLON','ACTION','TEDI','PRIMAPRIX','NORAUTO','AMAZON','SUPERCOR','CASH FRESH','GM CASH','TRANSGOURMET','CASH IFA','PRINCIPE PIO'];
+function tkImportes(linea){
+  const out=[], re=/(\d{1,3}(?:[.\s]\d{3})+|\d+)\s?[,.]\s?(\d{2})(?!\d)/g; let m;
+  while((m=re.exec(linea))){ const v=parseFloat(m[1].replace(/[.\s]/g,'')+'.'+m[2]); if(v>0&&v<100000) out.push(v); }
+  return out;
+}
+function tkLeer(texto){
+  const lineas=String(texto||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean), N=lineas.map(normName);
+  const res={total:null,fecha:'',tienda:''};
+  // Total: líneas con "total" / "a pagar" (no subtotal, ni total IVA/base, ni entregado/cambio)
+  const malo=/sub ?total|total (de )?(iva|base|impuesto|cuota|dto|descuento|ahorro|art|unid|uds|items|linea|pzas|bultos|kg)|base imp|entregad|cambio|devol|pendiente|puntos/;
+  let cand=[];
+  N.forEach((n,i)=>{
+    if(!/total|a pagar|importe|tarjeta|efectivo|visa|mastercard/.test(n) || malo.test(n)) return;
+    const prio=/total a pagar|a pagar|total compra|total factura|total eur|importe total|^total\b|\btotal\b/.test(n)?2:1;
+    let v=tkImportes(n); if(!v.length && N[i+1] && !malo.test(N[i+1])) v=tkImportes(N[i+1]);
+    v.forEach(x=>cand.push({v:x,prio}));
+  });
+  if(cand.length){ const pm=Math.max(...cand.map(c=>c.prio)); res.total=Math.max(...cand.filter(c=>c.prio===pm).map(c=>c.v)); }
+  // Fecha: la primera válida que no sea futura
+  const hoy=new Date(); hoy.setHours(23,59,59);
+  for(const n of N){ const re=/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4}|\d{2})\b/g; let m, ok=false;
+    while((m=re.exec(n))){ let d=+m[1], mo=+m[2], y=+m[3]; if(y<100) y+=2000;
+      const f=new Date(y,mo-1,d); if(d>=1&&d<=31&&mo>=1&&mo<=12&&y>=2015&&f.getMonth()===mo-1&&f<=hoy){ res.fecha=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'); ok=true; break; } }
+    if(ok) break; }
+  // Tienda: primero los proveedores ya usados en el programa, luego las tiendas conocidas, si no la primera línea con letras
+  const todo=' '+N.join(' ').replace(/[^a-z0-9ñ ]/g,' ').replace(/\s+/g,' ')+' ';
+  const usados=[...new Set(db.movimientos.map(m=>(m.proveedor||'').trim()).filter(p=>p.length>=3))];
+  const conocida=usados.concat(TK_TIENDAS).find(t=>todo.includes(' '+normName(t).replace(/[^a-z0-9ñ ]/g,' ').replace(/\s+/g,' ')+' '));
+  if(conocida) res.tienda=TK_TIENDAS.includes(conocida)?conocida.charAt(0)+conocida.slice(1).toLowerCase().replace(/ (\w)/g,(_,c)=>' '+c.toUpperCase()):conocida;
+  else { const l=lineas.slice(0,6).find(l=>(l.match(/[A-Za-zÁÉÍÓÚÑáéíóúñ]/g)||[]).length>=4 && !/\d{5,}|tel|cif|nif|c\/|calle|avda/i.test(l)); if(l) res.tienda=l.replace(/[^\wÁÉÍÓÚÑáéíóúñ .&'-]/g,'').trim().slice(0,40); }
+  return res;
+}
+async function leerTicket(input){
+  const f=(input.files||[])[0]; input.value=''; if(!f) return;
+  if(!/^image\//.test(f.type)){ alert('Para leer el ticket hace falta una foto (imagen).'); return; }
+  ticketEstado('⏳ Guardando la foto…');
+  const adj=await subirAdjuntos([f]); adj.forEach(a=>movRecibos.push(a)); renderReciboBox();
+  ticketEstado('⏳ Leyendo el ticket… <span id="tkPct"></span><br><span class="muted" style="font-size:12px">La primera vez tarda un poco más (se descarga el lector).</span>');
+  let texto='';
+  try{
+    await cargarTesseract();
+    const img=await compressImage(f,2200,0.92);
+    const w=await Tesseract.createWorker('spa',1,{logger:m=>{ const el=document.getElementById('tkPct'); if(el&&m.status==='recognizing text') el.textContent=Math.round(m.progress*100)+' %'; }});
+    texto=(await w.recognize(img)).data.text; await w.terminate();
+  }catch(e){ ticketEstado('⚠️ No se ha podido leer el ticket ('+esc(e.message||String(e))+'). La foto sí queda adjunta: rellena los datos a mano.','mal'); return; }
+  const r=tkLeer(texto), puesto=[];
+  setTipo('gasto');
+  if(r.total!=null){ document.getElementById('mImporte').value=r.total.toFixed(2); repSuma(); puesto.push('importe <b>'+money(r.total)+'</b>'); }
+  if(r.fecha){ document.getElementById('mFecha').value=r.fecha; puesto.push('fecha <b>'+fmtFecha(r.fecha)+'</b>'); }
+  if(r.tienda){
+    const pv=document.getElementById('mProveedor'); if(!pv.value.trim()){ pv.value=r.tienda; puesto.push('tienda <b>'+esc(r.tienda)+'</b>'); }
+    const cc=document.getElementById('mConcepto'); if(!cc.value.trim()) cc.value='Compra en '+r.tienda;
+    if(!document.getElementById('mCategoria').value){ const prev=db.movimientos.filter(m=>m.tipo==='gasto'&&m.categoria&&normName(m.proveedor||'')===normName(r.tienda)).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))[0];
+      if(prev){ setMovCat(prev.categoria); puesto.push('categoría <b>'+esc(prev.categoria)+'</b> (como la última vez)'); } }
+  }
+  if(!puesto.length) ticketEstado('🤔 No he sabido leer los datos de este ticket (puede que la foto esté borrosa o torcida). La foto sí queda adjunta: rellena los datos a mano.','mal');
+  else ticketEstado('✅ Leído: '+puesto.join(' · ')+'.'+(r.total==null?'<br>⚠️ No he encontrado el <b>total</b>: ponlo a mano.':'')+'<br><b>Revísalo antes de guardar</b> (el lector a veces se equivoca). La foto queda adjunta.', r.total==null?'mal':'ok');
+  if(r.total==null) document.getElementById('mImporte').focus();
 }
 /* Lee y guarda (en la carpeta recibos/) fotos o documentos. Devuelve [{src,kind}] */
 async function subirAdjuntos(files){
