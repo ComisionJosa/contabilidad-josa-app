@@ -2077,6 +2077,20 @@ function cargarTesseract(){
     sc.onload=()=>ok(); sc.onerror=()=>{ tesseractCargando=null; ko(new Error('sin conexión')); }; document.head.appendChild(sc); });
   return tesseractCargando;
 }
+/* Foto preparada para leer: tamaño grande y, si gris=true, en escala de grises con más contraste (lee mucho mejor fotos de móvil) */
+async function tkPrep(file,gris){
+  const img=await new Promise((ok,ko)=>{ const fr=new FileReader(); fr.onload=()=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=ko; i.src=fr.result; }; fr.onerror=ko; fr.readAsDataURL(file); });
+  let w=img.width,h=img.height; const k=Math.min(1,2600/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k);
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const cx=cv.getContext('2d'); cx.drawImage(img,0,0,w,h);
+  if(gris){
+    const d=cx.getImageData(0,0,w,h), p=d.data, g=new Float32Array(w*h);
+    for(let i=0;i<w*h;i++) g[i]=0.299*p[4*i]+0.587*p[4*i+1]+0.114*p[4*i+2];
+    const s=Float32Array.from(g).sort(), lo=s[Math.floor(s.length*0.02)], hi=s[Math.floor(s.length*0.98)];
+    for(let i=0;i<w*h;i++){ const v=Math.max(0,Math.min(255,(g[i]-lo)*255/((hi-lo)||1))); p[4*i]=p[4*i+1]=p[4*i+2]=v; }
+    cx.putImageData(d,0,0);
+  }
+  return cv.toDataURL('image/png');
+}
 function ticketEstado(html,cls){ const el=document.getElementById('mTicketEstado'); el.style.display=html?'':'none'; el.className='tk-estado '+(cls||''); el.innerHTML=html||''; }
 const TK_TIENDAS=['MAKRO','MERCADONA','CARREFOUR','ALCAMPO','EROSKI','LIDL','ALDI','DIA','CONSUM','SIMPLY','SPAR','AHORRAMAS','BM','GADIS','FROIZ','COVIRAN','HIPERCOR','EL CORTE INGLES','LEROY MERLIN','BRICOMART','BRICO DEPOT','BAUHAUS','IKEA','DECATHLON','ACTION','TEDI','PRIMAPRIX','NORAUTO','AMAZON','SUPERCOR','CASH FRESH','GM CASH','TRANSGOURMET','CASH IFA','PRINCIPE PIO'];
 function tkImportes(linea){
@@ -2091,8 +2105,8 @@ function tkLeer(texto){
   const malo=/sub ?total|total (de )?(iva|base|impuesto|cuota|dto|descuento|ahorro|art|unid|uds|items|linea|pzas|bultos|kg)|base imp|entregad|cambio|devol|pendiente|puntos/;
   let cand=[];
   N.forEach((n,i)=>{
-    if(!/total|a pagar|importe|tarjeta|efectivo|visa|mastercard/.test(n) || malo.test(n)) return;
-    const prio=/total a pagar|a pagar|total compra|total factura|total eur|importe total|^total\b|\btotal\b/.test(n)?2:1;
+    if(!/total|\btot\b|a pagar|importe|tarjeta|efectivo|visa|mastercard/.test(n) || malo.test(n)) return;
+    const prio=/total a pagar|a pagar|total compra|total factura|total eur|importe total|\btotale?\b|\btot\b/.test(n)?2:1;
     let v=tkImportes(n); if(!v.length && N[i+1] && !malo.test(N[i+1])) v=tkImportes(N[i+1]);
     v.forEach(x=>cand.push({v:x,prio}));
   });
@@ -2108,7 +2122,6 @@ function tkLeer(texto){
   const usados=[...new Set(db.movimientos.map(m=>(m.proveedor||'').trim()).filter(p=>p.length>=3))];
   const conocida=usados.concat(TK_TIENDAS).find(t=>todo.includes(' '+normName(t).replace(/[^a-z0-9ñ ]/g,' ').replace(/\s+/g,' ')+' '));
   if(conocida) res.tienda=TK_TIENDAS.includes(conocida)?conocida.charAt(0)+conocida.slice(1).toLowerCase().replace(/ (\w)/g,(_,c)=>' '+c.toUpperCase()):conocida;
-  else { const l=lineas.slice(0,6).find(l=>(l.match(/[A-Za-zÁÉÍÓÚÑáéíóúñ]/g)||[]).length>=4 && !/\d{5,}|tel|cif|nif|c\/|calle|avda/i.test(l)); if(l) res.tienda=l.replace(/[^\wÁÉÍÓÚÑáéíóúñ .&'-]/g,'').trim().slice(0,40); }
   return res;
 }
 async function leerTicket(input){
@@ -2117,14 +2130,24 @@ async function leerTicket(input){
   ticketEstado('⏳ Guardando la foto…');
   const adj=await subirAdjuntos([f]); adj.forEach(a=>movRecibos.push(a)); renderReciboBox();
   ticketEstado('⏳ Leyendo el ticket… <span id="tkPct"></span><br><span class="muted" style="font-size:12px">La primera vez tarda un poco más (se descarga el lector).</span>');
-  let texto='';
+  const res={total:null,fecha:'',tienda:''};
   try{
     await cargarTesseract();
-    const img=await compressImage(f,2200,0.92);
-    const w=await Tesseract.createWorker('spa',1,{logger:m=>{ const el=document.getElementById('tkPct'); if(el&&m.status==='recognizing text') el.textContent=Math.round(m.progress*100)+' %'; }});
-    texto=(await w.recognize(img)).data.text; await w.terminate();
+    const gris=await tkPrep(f,true), color=await tkPrep(f,false);
+    let paso='';
+    const w=await Tesseract.createWorker('spa',1,{logger:m=>{ const el=document.getElementById('tkPct'); if(el&&m.status==='recognizing text') el.textContent=paso+Math.round(m.progress*100)+' %'; }});
+    // Varios intentos (foto mejorada / original, distintos modos de lectura) hasta encontrar el total
+    const intentos=[[gris,'3'],[gris,'11'],[color,'11'],[gris,'6']];
+    for(let k=0;k<intentos.length;k++){
+      paso=(k?'intento '+(k+1)+' de '+intentos.length+' · ':'');
+      await w.setParameters({tessedit_pageseg_mode:intentos[k][1]});
+      const r=tkLeer((await w.recognize(intentos[k][0])).data.text);
+      if(res.total==null&&r.total!=null) res.total=r.total; if(!res.fecha) res.fecha=r.fecha; if(!res.tienda) res.tienda=r.tienda;
+      if(res.total!=null && res.fecha) break;
+    }
+    await w.terminate();
   }catch(e){ ticketEstado('⚠️ No se ha podido leer el ticket ('+esc(e.message||String(e))+'). La foto sí queda adjunta: rellena los datos a mano.','mal'); return; }
-  const r=tkLeer(texto), puesto=[];
+  const r=res, puesto=[];
   setTipo('gasto');
   if(r.total!=null){ document.getElementById('mImporte').value=r.total.toFixed(2); repSuma(); puesto.push('importe <b>'+money(r.total)+'</b>'); }
   if(r.fecha){ document.getElementById('mFecha').value=r.fecha; puesto.push('fecha <b>'+fmtFecha(r.fecha)+'</b>'); }
