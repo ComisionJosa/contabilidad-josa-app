@@ -290,6 +290,8 @@
   .app-movil .tb-movs .primary{flex:1 1 100%}
   /* ---- Leer ticket (OCR) y buscador de movimientos ---- */
   .tk-btn{width:100%;padding:12px;font-size:15px;font-weight:700;border:1px dashed var(--acc);background:transparent;color:var(--acc);border-radius:10px;cursor:pointer}
+  .tk-row{display:flex;gap:8px} .tk-cam,.tk-mv{display:none}
+  @media (pointer:coarse){ .tk-cam{display:block;flex:2} .tk-gal{flex:1} .tk-mv{display:inline} .tk-pc{display:none} }
   .tk-estado{margin-top:8px;padding:9px 11px;border-radius:9px;font-size:13.5px;line-height:1.45;border:1px solid var(--line)}
   .tk-estado.ok{border-color:var(--green)} .tk-estado.mal{border-color:#f5cf7a}
   .mv-buscar{display:flex;gap:8px;align-items:center;margin:0 0 10px}
@@ -546,7 +548,11 @@
   <h3 id="movModalTitle">Nuevo movimiento</h3>
   <div class="field">
     <input type="file" id="mTicketFile" accept="image/*" style="display:none" onchange="leerTicket(this)">
-    <button type="button" class="tk-btn" onclick="const i=document.getElementById('mTicketFile');i.value='';i.click()">📷 Foto del ticket → rellenar solo</button>
+    <input type="file" id="mTicketCam" accept="image/*" capture="environment" style="display:none" onchange="leerTicket(this)">
+    <div class="tk-row">
+      <button type="button" class="tk-btn tk-cam" onclick="const i=document.getElementById('mTicketCam');i.value='';i.click()">📷 Hacer foto del ticket</button>
+      <button type="button" class="tk-btn tk-gal" onclick="const i=document.getElementById('mTicketFile');i.value='';i.click()"><span class="tk-pc">📷 Foto del ticket → rellenar solo</span><span class="tk-mv">🖼️ Galería</span></button>
+    </div>
     <div id="mTicketEstado" class="tk-estado" style="display:none"></div>
   </div>
   <div class="field"><label>Tipo</label>
