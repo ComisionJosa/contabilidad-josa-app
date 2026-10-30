@@ -547,7 +547,7 @@
 <div class="modal-bg" id="movModal"><div class="modal">
   <h3 id="movModalTitle">Nuevo movimiento</h3>
   <div class="field">
-    <input type="file" id="mTicketFile" accept="image/*" style="display:none" onchange="leerTicket(this)">
+    <input type="file" id="mTicketFile" accept="image/*" multiple style="display:none" onchange="leerTicket(this)">
     <input type="file" id="mTicketCam" accept="image/*" capture="environment" style="display:none" onchange="leerTicket(this)">
     <div class="tk-row">
       <button type="button" class="tk-btn tk-cam" onclick="const i=document.getElementById('mTicketCam');i.value='';i.click()">📷 Hacer foto del ticket</button>
@@ -1859,7 +1859,7 @@ async function cargarInfoCarpeta(){
 /* ============ MOVIMIENTO ============ */
 function openMov(id){
   if(esCerrada()){alert('🔒 Esta comisión está cerrada (solo lectura).');return;}
-  state.editMovId=id||null;state.lsLink=null;state.cjLink=null;const c=activa(); ticketEstado('');
+  state.editMovId=id||null;state.lsLink=null;state.cjLink=null;const c=activa(); ticketEstado(''); tkHojas=0; tkRes=null;
   const acts=fiestasOrden(c).filter(f=>f.activa);
   document.getElementById('mFiesta').innerHTML=acts.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('')||'<option value="">(no hay fiestas activas)</option>';
   if(id){const m=db.movimientos.find(x=>x.id===id);document.getElementById('movModalTitle').textContent='Editar movimiento';setTipo(m.tipo);
@@ -2078,10 +2078,12 @@ function cargarTesseract(){
   return tesseractCargando;
 }
 /* Foto preparada para leer: tamaño grande y, si gris=true, en escala de grises con más contraste (lee mucho mejor fotos de móvil) */
-async function tkPrep(file,gris){
+async function tkPrep(file,gris,rot){
   const img=await new Promise((ok,ko)=>{ const fr=new FileReader(); fr.onload=()=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=ko; i.src=fr.result; }; fr.onerror=ko; fr.readAsDataURL(file); });
   let w=img.width,h=img.height; const k=Math.min(1,2600/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k);
-  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const cx=cv.getContext('2d'); cx.drawImage(img,0,0,w,h);
+  const cv=document.createElement('canvas'), cx=cv.getContext('2d');
+  if(rot){ cv.width=h; cv.height=w; cx.translate(h/2,w/2); cx.rotate(rot*Math.PI/180); cx.drawImage(img,-w/2,-h/2,w,h); cx.setTransform(1,0,0,1,0,0); [w,h]=[h,w]; }
+  else { cv.width=w; cv.height=h; cx.drawImage(img,0,0,w,h); }
   if(gris){
     const d=cx.getImageData(0,0,w,h), p=d.data, g=new Float32Array(w*h);
     for(let i=0;i<w*h;i++) g[i]=0.299*p[4*i]+0.587*p[4*i+1]+0.114*p[4*i+2];
@@ -2102,7 +2104,7 @@ function tkLeer(texto){
   const lineas=String(texto||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean), N=lineas.map(normName);
   const res={total:null,fecha:'',tienda:''};
   // Total: líneas con "total" / "a pagar" (no subtotal, ni total IVA/base, ni entregado/cambio)
-  const malo=/sub ?total|total (de )?(iva|base|impuesto|cuota|dto|descuento|ahorro|art|unid|uds|items|linea|pzas|bultos|kg)|base imp|entregad|cambio|devol|pendiente|puntos/;
+  const malo=/sub ?total|total (de )?(iva|imp|base|impuesto|cuota|dto|descuento|ahorro|art|unid|uds|items|linea|pzas|bultos|kg)|base imp|peso|bultos|entregad|cambio|devol|pendiente|puntos/;
   let cand=[];
   N.forEach((n,i)=>{
     if(!/total|\btot\b|a pagar|importe|tarjeta|efectivo|visa|mastercard/.test(n) || malo.test(n)) return;
@@ -2124,41 +2126,57 @@ function tkLeer(texto){
   if(conocida) res.tienda=TK_TIENDAS.includes(conocida)?conocida.charAt(0)+conocida.slice(1).toLowerCase().replace(/ (\w)/g,(_,c)=>' '+c.toUpperCase()):conocida;
   return res;
 }
+/* Un ticket puede tener varias hojas (p. ej. albaranes largos del Makro): cada foto se adjunta y el total se coge de la última hoja que lo tenga */
+let tkHojas=0, tkRes=null;
+async function tkLeerFoto(w,f,setPaso){
+  const gris=await tkPrep(f,true), color=await tkPrep(f,false), res={total:null,fecha:'',tienda:''};
+  // Varios intentos (foto mejorada / original, distintos modos de lectura) hasta encontrar el total
+  const intentos=[[gris,'3'],[gris,'11'],[color,'11'],[gris,'6'],[()=>tkPrep(f,true,90),'3'],[()=>tkPrep(f,true,-90),'3']];  // las 2 últimas: foto de lado
+  for(let k=0;k<intentos.length;k++){
+    if(typeof intentos[k][0]==='function') intentos[k][0]=await intentos[k][0]();
+    setPaso(k?'intento '+(k+1)+' de '+intentos.length+' · ':'');
+    await w.setParameters({tessedit_pageseg_mode:intentos[k][1]});
+    const t=(await w.recognize(intentos[k][0])).data.text, r=tkLeer(t);
+    // si en el primer intento casi no salen palabras, la foto estará de lado: probar antes los giros
+    if(k===0 && (t.match(/[A-Za-zÁÉÍÓÚÑáéíóúñ]{4,}/g)||[]).length<15) intentos.splice(1,0,...intentos.splice(4,2));
+    if(res.total==null&&r.total!=null) res.total=r.total; if(!res.fecha) res.fecha=r.fecha; if(!res.tienda) res.tienda=r.tienda;
+    if(res.total!=null && (res.fecha||tkHojas)) break;
+  }
+  return res;
+}
 async function leerTicket(input){
-  const f=(input.files||[])[0]; input.value=''; if(!f) return;
-  if(!/^image\//.test(f.type)){ alert('Para leer el ticket hace falta una foto (imagen).'); return; }
-  ticketEstado('⏳ Guardando la foto…');
-  const adj=await subirAdjuntos([f]); adj.forEach(a=>movRecibos.push(a)); renderReciboBox();
-  ticketEstado('⏳ Leyendo el ticket… <span id="tkPct"></span><br><span class="muted" style="font-size:12px">La primera vez tarda un poco más (se descarga el lector).</span>');
-  const res={total:null,fecha:'',tienda:''};
+  const files=Array.from(input.files||[]).filter(f=>/^image\//.test(f.type)); input.value=''; if(!files.length){ alert('Para leer el ticket hace falta una foto (imagen).'); return; }
+  if(!tkHojas) tkRes={total:null,fecha:'',tienda:''};
+  ticketEstado('⏳ Guardando '+(files.length>1?'las fotos':'la foto')+'…');
+  const adj=await subirAdjuntos(files); adj.forEach(a=>movRecibos.push(a)); renderReciboBox();
   try{
+    ticketEstado('⏳ Leyendo el ticket… <span id="tkPct"></span><br><span class="muted" style="font-size:12px">La primera vez tarda un poco más (se descarga el lector).</span>');
     await cargarTesseract();
-    const gris=await tkPrep(f,true), color=await tkPrep(f,false);
-    let paso='';
-    const w=await Tesseract.createWorker('spa',1,{logger:m=>{ const el=document.getElementById('tkPct'); if(el&&m.status==='recognizing text') el.textContent=paso+Math.round(m.progress*100)+' %'; }});
-    // Varios intentos (foto mejorada / original, distintos modos de lectura) hasta encontrar el total
-    const intentos=[[gris,'3'],[gris,'11'],[color,'11'],[gris,'6']];
-    for(let k=0;k<intentos.length;k++){
-      paso=(k?'intento '+(k+1)+' de '+intentos.length+' · ':'');
-      await w.setParameters({tessedit_pageseg_mode:intentos[k][1]});
-      const r=tkLeer((await w.recognize(intentos[k][0])).data.text);
-      if(res.total==null&&r.total!=null) res.total=r.total; if(!res.fecha) res.fecha=r.fecha; if(!res.tienda) res.tienda=r.tienda;
-      if(res.total!=null && res.fecha) break;
+    let paso='', hoja='';
+    const w=await Tesseract.createWorker('spa',1,{logger:m=>{ const el=document.getElementById('tkPct'); if(el&&m.status==='recognizing text') el.textContent=hoja+paso+Math.round(m.progress*100)+' %'; }});
+    for(const f of files){
+      hoja=(tkHojas||files.length>1)?'hoja '+(tkHojas+1)+' · ':'';
+      const r=await tkLeerFoto(w,f,p=>{ paso=p; });
+      if(r.total!=null) tkRes.total=r.total;          // la última hoja con total manda
+      if(!tkRes.fecha) tkRes.fecha=r.fecha; if(!tkRes.tienda) tkRes.tienda=r.tienda;
+      tkHojas++;
     }
     await w.terminate();
   }catch(e){ ticketEstado('⚠️ No se ha podido leer el ticket ('+esc(e.message||String(e))+'). La foto sí queda adjunta: rellena los datos a mano.','mal'); return; }
-  const r=res, puesto=[];
+  const r=tkRes, puesto=[];
   setTipo('gasto');
   if(r.total!=null){ document.getElementById('mImporte').value=r.total.toFixed(2); repSuma(); puesto.push('importe <b>'+money(r.total)+'</b>'); }
   if(r.fecha){ document.getElementById('mFecha').value=r.fecha; puesto.push('fecha <b>'+fmtFecha(r.fecha)+'</b>'); }
   if(r.tienda){
-    const pv=document.getElementById('mProveedor'); if(!pv.value.trim()){ pv.value=r.tienda; puesto.push('tienda <b>'+esc(r.tienda)+'</b>'); }
+    const pv=document.getElementById('mProveedor'); if(!pv.value.trim()) pv.value=r.tienda; puesto.push('tienda <b>'+esc(r.tienda)+'</b>');
     const cc=document.getElementById('mConcepto'); if(!cc.value.trim()) cc.value='Compra en '+r.tienda;
     if(!document.getElementById('mCategoria').value){ const prev=db.movimientos.filter(m=>m.tipo==='gasto'&&m.categoria&&normName(m.proveedor||'')===normName(r.tienda)).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))[0];
       if(prev){ setMovCat(prev.categoria); puesto.push('categoría <b>'+esc(prev.categoria)+'</b> (como la última vez)'); } }
   }
-  if(!puesto.length) ticketEstado('🤔 No he sabido leer los datos de este ticket (puede que la foto esté borrosa o torcida). La foto sí queda adjunta: rellena los datos a mano.','mal');
-  else ticketEstado('✅ Leído: '+puesto.join(' · ')+'.'+(r.total==null?'<br>⚠️ No he encontrado el <b>total</b>: ponlo a mano.':'')+'<br><b>Revísalo antes de guardar</b> (el lector a veces se equivoca). La foto queda adjunta.', r.total==null?'mal':'ok');
+  const hojas=tkHojas>1?' ('+tkHojas+' hojas)':'';
+  const mas='<br><span class="muted" style="font-size:12.5px">📄 ¿El ticket tiene más hojas? Haz foto de la siguiente con el mismo botón: se añade y el total se coge de la última hoja.</span>';
+  if(!puesto.length) ticketEstado('🤔 No he sabido leer los datos de este ticket'+hojas+' (puede que la foto esté borrosa o torcida). La foto sí queda adjunta: rellena los datos a mano.'+mas,'mal');
+  else ticketEstado('✅ Leído'+hojas+': '+puesto.join(' · ')+'.'+(r.total==null?'<br>⚠️ No he encontrado el <b>total</b>: ponlo a mano.':'')+'<br><b>Revísalo antes de guardar</b> (el lector a veces se equivoca). '+(tkHojas>1?'Las fotos quedan adjuntas.':'La foto queda adjunta.')+mas, r.total==null?'mal':'ok');
   if(r.total==null) document.getElementById('mImporte').focus();
 }
 /* Lee y guarda (en la carpeta recibos/) fotos o documentos. Devuelve [{src,kind}] */
