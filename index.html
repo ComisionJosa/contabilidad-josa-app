@@ -598,7 +598,7 @@
     <div id="mReciboBox"></div>
   </div>
   <div class="modal-actions">
-    <button class="ghost" onclick="closeModal('movModal')">Cancelar</button>
+    <button class="ghost" onclick="movCancelar()">Cancelar</button>
     <button class="primary" id="mGuardar">Guardar</button>
   </div>
 </div></div>
@@ -1859,7 +1859,7 @@ async function cargarInfoCarpeta(){
 /* ============ MOVIMIENTO ============ */
 function openMov(id){
   if(esCerrada()){alert('🔒 Esta comisión está cerrada (solo lectura).');return;}
-  state.editMovId=id||null;state.lsLink=null;state.cjLink=null;const c=activa(); ticketEstado(''); tkHojas=0; tkRes=null;
+  state.editMovId=id||null;state.lsLink=null;state.cjLink=null;const c=activa(); ticketEstado(''); tkHojas=0; tkRes=null; movSubidos=[];
   const acts=fiestasOrden(c).filter(f=>f.activa);
   document.getElementById('mFiesta').innerHTML=acts.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('')||'<option value="">(no hay fiestas activas)</option>';
   if(id){const m=db.movimientos.find(x=>x.id===id);document.getElementById('movModalTitle').textContent='Editar movimiento';setTipo(m.tipo);
@@ -1953,7 +1953,7 @@ document.getElementById('mGuardar').onclick=()=>{
   } else data.pagos=undefined;
   if(state.editMovId){const t=db.movimientos.find(x=>x.id===state.editMovId);Object.assign(t,data);delete t.recibo;if(!t.pagos)delete t.pagos;}
   else{const nm={id:uid(),...data}; if(state.lsLink) nm.listadoId=state.lsLink; if(state.cjLink) nm.cajaId=state.cjLink; db.movimientos.push(nm);}
-  if(save()){closeModal('movModal');render();}
+  if(save()){ borrarFicherosAdj(movSubidos.filter(a=>!movRecibos.some(x=>x.src===a.src))); movSubidos=[]; closeModal('movModal');render();}
 };
 
 /* ============ COMISIÓN ============ */
@@ -2039,6 +2039,8 @@ async function exportarFacturas(cid,fid){
 function verFiesta(fid){state.tab='movs';state.filtro={fiesta:fid,tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:''};render();}
 /* ---- ADJUNTOS (fotos y documentos) ---- */
 let movRecibos=[];   // [{src, kind:'img'|'doc'}]
+let movSubidos=[];   // fotos/documentos subidos con el formulario abierto: si se cancela (o se quitan antes de guardar) se borran, para no dejar ficheros sueltos
+function movCancelar(){ borrarFicherosAdj(movSubidos); movSubidos=[]; closeModal('movModal'); }
 function renderReciboBox(){
   const box=document.getElementById('mReciboBox'); if(!box)return;
   let html='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">';
@@ -2065,7 +2067,7 @@ function compressImage(file,maxDim,quality){
 function readAsDataURL(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(file); }); }
 async function handleReciboFile(input){
   const files=Array.from(input.files||[]); input.value=''; if(!files.length)return;
-  (await subirAdjuntos(files)).forEach(a=>movRecibos.push(a));
+  (await subirAdjuntos(files)).forEach(a=>{ movRecibos.push(a); movSubidos.push(a); });
   renderReciboBox();
 }
 /* ---- Leer ticket con foto (OCR en el propio navegador, sin claves): la foto queda adjunta y se rellenan importe, fecha y tienda ---- */
@@ -2148,7 +2150,7 @@ async function leerTicket(input){
   const files=Array.from(input.files||[]).filter(f=>/^image\//.test(f.type)); input.value=''; if(!files.length){ alert('Para leer el ticket hace falta una foto (imagen).'); return; }
   if(!tkHojas) tkRes={total:null,fecha:'',tienda:''};
   ticketEstado('⏳ Guardando '+(files.length>1?'las fotos':'la foto')+'…');
-  const adj=await subirAdjuntos(files); adj.forEach(a=>movRecibos.push(a)); renderReciboBox();
+  const adj=await subirAdjuntos(files); adj.forEach(a=>{ movRecibos.push(a); movSubidos.push(a); }); renderReciboBox();
   try{
     ticketEstado('⏳ Leyendo el ticket… <span id="tkPct"></span><br><span class="muted" style="font-size:12px">La primera vez tarda un poco más (se descarga el lector).</span>');
     await cargarTesseract();
