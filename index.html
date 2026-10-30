@@ -3443,28 +3443,41 @@ async function lsPdf(){
     const ts=lsTarifas(l), varias=ts.length>1;
     f('normal',10,[90,90,90]); const l1=doc.splitTextToSize([l.fecha?fmtFecha(l.fecha):'',fz,lsPrecioTxt(l)].filter(Boolean).join('  ·  '),W-2*M); doc.text(l1,M,y); y+=5*l1.length;
     const l2=doc.splitTextToSize(`${t.personas} personas${varias?' ('+lsDetalle(l,t.por)+')':''} · ${t.grupos} apuntes · total ${money(t.total)} · cobrado ${money(t.cobrado)} · falta ${money(t.total-t.cobrado)}`,W-2*M); doc.text(l2,M,y); y+=5*l2.length+2;
-    const cols=varias?[['Pagado',16],['Nombre',58],['Personas',48],['Importe',24],['Nota',36]]:[['Pagado',16],['Nombre',82],['Pers.',16],['Importe',26],['Nota',42]];
+    // Leyenda de los círculos (como en el listado): se tachan a boli al cobrar
+    f('normal',8.5,[70,70,70]); let lx=M; doc.text('Tacha un círculo por cada uno que pague:',lx,y+2.2); lx+=doc.getTextWidth('Tacha un círculo por cada uno que pague:')+3;
+    ts.forEach((tf,ti)=>{ const r=ti?1.6:1.9; doc.setDrawColor(70); doc.setLineWidth(0.3); if(ti) doc.setLineDashPattern([0.6,0.5],0); doc.circle(lx+r,y+1.4,r,'S'); doc.setLineDashPattern([],0);
+      f('bold',ti?5.5:6,[70,70,70]); doc.text(ti?(tf.nombre||'?').trim().charAt(0).toUpperCase():'1',lx+r,y+2.4,{align:'center'});
+      f('normal',8.5,[70,70,70]); doc.text(tf.nombre||'',lx+2*r+1.5,y+2.2); lx+=2*r+1.5+doc.getTextWidth(tf.nombre||'')+5; });
+    y+=6;
+    const cols=[['Pagado',14],['Nombre',52],['Personas (tachar al cobrar)',62],['Importe',22],['Nota',32]];
     const cab=()=>{ doc.setFillColor(30,41,59); doc.rect(M,y,W-2*M,7,'F'); f('bold',9,[255,255,255]); let x=M; cols.forEach(([n,w])=>{ doc.text(n,x+2,y+4.8); x+=w; }); y+=7; };
     cab();
     const gente=(l.gente||[]).slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
+    const PASO=6.4, POR_FILA=Math.floor((cols[2][1]-3)/PASO);
     gente.forEach((g,i)=>{
-      const x0=lsGrupo(l,g), p=lsPag(l,g), tot=lsSuma(x0), pp=lsSuma(p), h=8;
+      const x0=lsGrupo(l,g), p=lsPag(l,g), tot=lsSuma(x0), pp=lsSuma(p);
+      const circ=[]; ts.forEach((tf,ti)=>{ for(let k=0;k<x0[tf.id];k++) circ.push({ti,k,pag:k<p[tf.id],txt:ti?(tf.nombre||'?').trim().charAt(0).toUpperCase():String(k+1)}); });
+      const lineas=Math.max(1,Math.ceil(circ.length/POR_FILA)), h=Math.max(varias?10:8.5,lineas*PASO+2.4);
       if(y+h>283){ doc.addPage(); y=14; cab(); }
       if(i%2){ doc.setFillColor(243,245,248); doc.rect(M,y,W-2*M,h,'F'); }
       let x=M;
       doc.setDrawColor(60); doc.setLineWidth(0.35); doc.rect(x+5,y+1.8,4.4,4.4);
       if(tot>0&&pp>=tot){ doc.setDrawColor(22,140,60); doc.setLineWidth(0.8); doc.line(x+5.7,y+4.2,x+7,y+5.6); doc.line(x+7,y+5.6,x+9.9,y+1.4); }
-      else if(pp>0){ f('bold',7,[180,110,0]); doc.text(pp+'/'+tot,x+10.5,y+5.4); }
+      else if(pp>0){ f('bold',7,[180,110,0]); doc.text(pp+'/'+tot,x+4.6,y+9); }
       doc.setLineWidth(0.2); x+=cols[0][1];
-      f('bold',10); const nom=doc.splitTextToSize((g.nombre||'')+(tot>1?'  (+'+(tot-1)+')':''),cols[1][1]-3)[0]; doc.text(nom,x+2,y+5.4);
+      f('bold',10); const nom=doc.splitTextToSize((g.nombre||'')+(tot>1?'  ('+tot+')':''),cols[1][1]-3)[0]; doc.text(nom,x+2,y+5.4);
       if(tot>0&&pp>=tot){ const w=doc.getTextWidth(nom); doc.setDrawColor(120); doc.line(x+2,y+4,x+2+w,y+4); }
+      if(varias){ f('normal',7.5,[100,100,100]); doc.text(doc.splitTextToSize(lsDetalle(l,x0),cols[1][1]-3)[0]||'',x+2,y+8.8); }
       x+=cols[1][1];
-      f('normal',10);
-      if(varias){ f('normal',8.5); doc.text(doc.splitTextToSize(lsDetalle(l,x0),cols[2][1]-3)[0]||'',x+2,y+5.4); f('normal',10); }
-      else doc.text(String(tot),x+2,y+5.4);
-      x+=cols[2][1];
-      const ic=cols[cols.length-2][1]; doc.text(money(lsDebe(l,g)),x+ic-2,y+5.4,{align:'right'}); x+=ic;
-      f('normal',8,[90,90,90]); doc.text(doc.splitTextToSize(g.nota||'',cols[cols.length-1][1]-3)[0]||'',x+2,y+5.4);
+      // los círculos: grandes para la primera tarifa (con su número), pequeños y a rayas para el resto (con su inicial); los ya pagados salen rellenos con ✓
+      circ.forEach((o,j)=>{ const r=o.ti?2.1:2.55, cx=x+2+(j%POR_FILA)*PASO+2.6, cy=y+1.2+Math.floor(j/POR_FILA)*PASO+2.6;
+        doc.setLineWidth(0.3);
+        if(o.pag){ doc.setFillColor(205,232,214); doc.setDrawColor(22,140,60); doc.circle(cx,cy,r,'FD'); doc.setLineWidth(0.5); doc.line(cx-r*0.5,cy,cx-r*0.1,cy+r*0.45); doc.line(cx-r*0.1,cy+r*0.45,cx+r*0.55,cy-r*0.5); }
+        else{ doc.setDrawColor(60); if(o.ti) doc.setLineDashPattern([0.6,0.5],0); doc.circle(cx,cy,r,'S'); doc.setLineDashPattern([],0);
+          f('bold',o.ti?6.5:(o.txt.length>1?6.5:7.5),[90,90,90]); doc.text(o.txt,cx,cy+(o.ti?0.85:1),{align:'center'}); } });
+      doc.setLineWidth(0.2); x+=cols[2][1];
+      f('normal',10); const ic=cols[3][1]; doc.text(money(lsDebe(l,g)),x+ic-2,y+5.4,{align:'right'}); x+=ic;
+      f('normal',8,[90,90,90]); doc.text(doc.splitTextToSize(g.nota||'',cols[4][1]-3).slice(0,Math.max(1,Math.floor((h-2)/3.4))),x+2,y+4.6);
       y+=h;
     });
     y+=3; if(y>280){ doc.addPage(); y=16; }
