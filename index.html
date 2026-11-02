@@ -1560,22 +1560,22 @@ function renderResumen(){
     </div>
     <div class="mini-stats">
       <div class="card mini"><span class="ico in">↗</span><div><span class="k">Ingresos</span><span class="v money pos" data-cuenta="${t.ing}">${money(t.ing)}</span></div></div>
-      <div class="card mini"><span class="ico out">↘</span><div><span class="k">Gastos</span><span class="v money neg" data-cuenta="${t.gas}">${money(t.gas)}</span></div></div>
+      <div class="card mini"><span class="ico out">↘</span><div><span class="k">Gastos</span><span class="v money neg" data-cuenta="${t.gasPag}">${money(t.gasPag)}</span>${t.pendiente>0?'<span class="muted" style="font-size:12px">Sin contar lo pendiente de pagar</span>':''}</div></div>
       <div class="card mini"><span class="ico neu">🏁</span><div><span class="k">Saldo inicial</span><span class="v money">${money(c.saldoInicial)}</span><span class="muted" style="font-size:12px">Lo que había al empezar la comisión</span></div></div>
     </div>
   </div>
   ${t.pendiente>0?`<div class="banner warn">⏳ Pendiente de pagar: <b>${money(t.pendiente)}</b> — reservado pero aún NO descontado de la caja.</div>`:''}
   <div class="section-title"><h2>Balance por fiesta</h2></div>
   <div class="grid cols-4">`;
-  const maxF=Math.max(1,...fiestasOrden(c).map(f=>{ const x=totalesFiesta(c.id,f.id); return Math.max(x.ing,x.gas); }));
+  const maxF=Math.max(1,...fiestasOrden(c).map(f=>{ const x=totalesFiesta(c.id,f.id); return Math.max(x.ing,x.gasPag); }));
   fiestasOrden(c).forEach(f=>{
-    const ft=totalesFiesta(c.id,f.id), pc=v=>(v/maxF*100).toFixed(1);
+    const ft=totalesFiesta(c.id,f.id), pc=v=>(v/maxF*100).toFixed(1); ft.res=ft.ing-ft.gasPag;   // en el resumen, lo pendiente de pagar no cuenta como gasto
     html+=`<div class="card fiesta-card ${f.activa?'':'off'}">
       <div class="fc-head"><span class="fc-emo">${EMO[f.tipo]||'🎪'}</span><div><h3>${esc(f.nombre)}</h3>${f.activa?'':'<span class="pill">No se celebra</span>'}</div></div>
       <div class="fc-lbl">Resultado</div>
       <div class="fc-res money ${ft.res>=0?'pos':'neg'}">${money(ft.res)}</div>
       <div class="fc-bar"><span class="muted">Ingresos</span><span class="tr"><span style="width:${pc(ft.ing)}%;background:var(--green)"></span></span><span class="money pos">${money(ft.ing)}</span></div>
-      <div class="fc-bar"><span class="muted">Gastos</span><span class="tr"><span style="width:${pc(ft.gas)}%;background:var(--red)"></span></span><span class="money neg">${money(ft.gas)}</span></div>
+      <div class="fc-bar"><span class="muted">Gastos</span><span class="tr"><span style="width:${pc(ft.gasPag)}%;background:var(--red)"></span></span><span class="money neg">${money(ft.gasPag)}</span></div>
       ${ft.pendiente>0?`<div class="fc-pend">⏳ Pendiente de pagar: <b>${money(ft.pendiente)}</b></div>`:''}
       <div class="fc-acc"><button class="icon-btn ghost" onclick="verFiesta('${f.id}')">Ver →</button><button class="icon-btn ghost" onclick="openCierre('${c.id}','${f.id}')">📄 Resumen</button>${(n=>n?`<button class="icon-btn ghost" onclick="exportarFacturas('${c.id}','${f.id}')" title="Descargar una carpeta (ZIP) con todos los documentos de esta fiesta">📎 Facturas (${n})</button>`:'')(movsDe(c.id).filter(m=>m.fiestaId===f.id).reduce((t,m)=>t+adjuntosDe(m).length,0))}</div>
     </div>`;
@@ -1602,7 +1602,7 @@ function sparkSaldo(c){
     <path d="${d} V${H} H0 Z" fill="url(#spkG)"/><path d="${d}" fill="none" style="stroke:var(--acc)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>${tips}</svg>
     <div class="spark-lbl"><span>${fmtFecha(pts[0].f)}</span><span>Dinero día a día</span><span>Hoy</span></div>`;
 }
-function desglose(cid,tipo){const map={};movsDe(cid).filter(m=>m.tipo===tipo).forEach(m=>{const k=m.categoria||'(sin categoría)';map[k]=(map[k]||0)+ +m.importe;});return Object.entries(map).sort((a,b)=>b[1]-a[1]);}
+function desglose(cid,tipo){const map={};movsDe(cid).filter(m=>m.tipo===tipo).forEach(m=>{const k=m.categoria||'(sin categoría)';map[k]=(map[k]||0)+(tipo==='gasto'?pagadoDe(m):+m.importe);});return Object.entries(map).filter(x=>x[1]>0.005).sort((a,b)=>b[1]-a[1]);}
 function catBox(title,arr,cls){
   const max=arr.reduce((m,x)=>Math.max(m,x[1]),0)||1;const color=cls==='pos'?'var(--green)':'var(--red)';
   if(!arr.length)return `<div class="card"><div class="section-title"><h2 style="font-size:16px">${title}</h2></div><div class="muted">Sin datos.</div></div>`;
