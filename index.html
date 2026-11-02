@@ -2920,11 +2920,14 @@ function cjCalc(k){
   const tipo=k.tipo||'barra', ini=cjTotal(k.inicio), fin=cjTotal(k.fin), contada=fin>0;
   const tickets=(k.listados||[]).reduce((t,id)=>{ const l=(db.listados||[]).find(x=>x.id===id); return t+(l?lsTot(l).cobrado:0); },0);
   const recaudado=Math.round((fin-ini)*100)/100, barra=tipo==='barra'?Math.round((recaudado-tickets)*100)/100:0;
-  const apuntado=db.movimientos.filter(m=>m.cajaId===k.id).reduce((t,m)=>t+(+m.importe||0),0);
-  const desc=tipo==='tickets'?Math.round((recaudado-tickets-apuntado)*100)/100:0;   // lo apuntado desde la caja = gente que pagó allí sin estar en listas
+  const desc=tipo==='tickets'?Math.round((recaudado-tickets)*100)/100:0;
+  // lo ya apuntado: desde la caja, y (en cajas de tickets) lo que se pasó antes desde sus listados
+  const pasadoLs=tipo==='tickets'?db.movimientos.filter(m=>m.listadoId&&(k.listados||[]).includes(m.listadoId)).reduce((t,m)=>t+(+m.importe||0),0):0;
+  const apuntado=Math.round((db.movimientos.filter(m=>m.cajaId===k.id).reduce((t,m)=>t+(+m.importe||0),0)+pasadoLs)*100)/100;
+  const debe=tipo==='tickets'?recaudado:barra, falta=Math.round((debe-apuntado)*100)/100;
   let estado='abierta';
-  if(contada) estado=tipo==='tickets'?(Math.abs(desc)<0.01?'cuadra':'descuadre'):(apuntado>0&&Math.abs(apuntado-barra)<0.01?'apuntada':'contada');
-  return {tipo,ini,fin,tickets,recaudado,barra,desc,apuntado,contada,estado};
+  if(contada) estado=apuntado>0&&Math.abs(falta)<0.01?'apuntada':'contada';
+  return {tipo,ini,fin,tickets,recaudado,barra,desc,apuntado,falta,contada,estado};
 }
 const CJ_EST={abierta:'🟢 Abierta · falta contar al cerrar',contada:'🔴 Contada · falta apuntar el ingreso',apuntada:'✅ Apuntada en Movimientos',cuadra:'✅ Cuadra con los listados',descuadre:'⚠️ No cuadra'};
 const descTxt=d=>Math.abs(d)<0.01?'Cuadra':(d>0?'Sobran '+money(d):'Faltan '+money(-d));
@@ -2940,7 +2943,7 @@ function renderCajas(){
     <li><b>Cada caja</b> (la mesa de tickets de la plaza, la barra…) coge de la bolsa un poco de cambio para dar la vuelta: apúntalo en «Al empezar». El programa te dice cuánto queda en la bolsa.</li>
     <li>Con el dinero de las cajas no se paga nada: solo se cobra y se da la vuelta.</li>
     <li><b>Al cerrar</b>, cuenta lo que hay y apúntalo en «Al cerrar». El cambio vuelve a la bolsa para la siguiente caja.</li>
-    <li><b>🎟️ Caja de tickets</b>: lo cobrado (al cerrar − cambio) tiene que ser lo que marcan los 📋 Listados. El programa te dice si <b>cuadra</b>, sobra o falta. Los tickets se pasan a ingresos desde Listados.</li>
+    <li><b>🎟️ Caja de tickets</b>: lo cobrado (al cerrar − cambio) se compara con lo que marcan los 📋 Listados (te dice si <b>cuadra</b>, sobra o falta; puede sobrar si se apuntó gente allí mismo). El ingreso se apunta desde la caja con <b>💶 Apuntar ingreso de tickets</b>: lo cobrado entero.</li>
     <li><b>🍺 Caja de barra</b>: al cerrar − cambio = <b>lo que ha hecho la barra</b>. Pulsa <b>💶 Apuntar ingreso de barra</b> y queda en Movimientos.</li>
     <li>Al acabar las fiestas, el fondo vuelve al banco: pulsa <b>🏦 Devuelto al banco</b>.</li></ol></details>`;
   // Fondos de cambio
@@ -2969,8 +2972,7 @@ function renderCajas(){
          <div class="cj-num"><div class="l">🔴 Al cerrar</div><div class="v">${r.contada?money(r.fin):'—'}</div></div>
          <div class="cj-num"><div class="l">💶 Cobrado</div><div class="v">${r.contada?money(r.recaudado):'—'}</div></div>
          <div class="cj-num"><div class="l">📋 Según listados</div><div class="v">${money(r.tickets)}</div></div>
-         ${r.apuntado?`<div class="cj-num"><div class="l">🙋 Sin estar en listas</div><div class="v">${money(r.apuntado)}</div></div>`:''}
-         ${r.contada?`<div class="cj-num ${Math.abs(r.desc)<0.01?'ok':'mal'}"><div class="l">⚖️ Cuadre</div><div class="v">${descTxt(r.desc)}</div></div>`:''}`
+         ${r.contada?`<div class="cj-num ${Math.abs(r.desc)<0.01?'ok':'mal'}"><div class="l">⚖️ Con los listados</div><div class="v">${descTxt(r.desc)}</div></div>`:''}`
       : `<div class="cj-num"><div class="l">🟢 Cambio</div><div class="v">${money(r.ini)}</div></div>
          <div class="cj-num"><div class="l">🔴 Al cerrar</div><div class="v">${r.contada?money(r.fin):'—'}</div></div>
          ${r.tickets?`<div class="cj-num"><div class="l">🎟️ Tickets</div><div class="v">${money(r.tickets)}</div></div>`:''}
@@ -2982,7 +2984,7 @@ function renderCajas(){
       ${ro?'':`<div style="grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap">
         <button class="${r.contada?'ghost':'primary'}" onclick="openCaja('${k.id}')">${r.contada?'✏️ Ver / editar':'🔴 Contar al cerrar'}</button>
         ${r.tipo==='barra'&&r.contada&&r.estado!=='apuntada'?`<button class="primary" onclick="cjIngreso('${k.id}')">💶 Apuntar ingreso de barra</button>`:''}
-        ${r.tipo==='tickets'&&r.contada&&r.desc>=0.01?`<button class="primary" onclick="cjIngreso('${k.id}')" title="Lo que sobra es de gente que pagó allí sin estar apuntada en los listados">💶 Apuntar lo que sobra (${money(r.desc)})</button>`:''}
+        ${r.tipo==='tickets'&&r.contada&&r.falta>=0.01?`<button class="primary" onclick="cjIngreso('${k.id}')" title="Lo contado al cerrar menos el cambio">💶 Apuntar ingreso de tickets (${money(r.falta)})</button>`:''}
         <button class="icon-btn danger" onclick="delCaja('${k.id}')" title="Borrar">🗑️</button></div>`}
     </div>`; }).join('');
   content.innerHTML=html;
@@ -3097,9 +3099,8 @@ function cjActualizar(){
        <div><span>− Cambio (vuelve a la bolsa)</span><b>${money(-r.ini)}</b></div>
        <div><span>= Cobrado en la caja</span><b>${money(r.recaudado)}</b></div>
        <div><span>📋 Según los listados</span><b>${money(r.tickets)}</b></div>
-       ${r.apuntado?`<div><span>🙋 Gente sin estar en listas (apuntado)</span><b>${money(r.apuntado)}</b></div>`:''}
        <div class="tot" style="color:${Math.abs(r.desc)<0.01?'var(--green)':'var(--x-rojo)'}"><span>⚖️ ${Math.abs(r.desc)<0.01?'✅ Cuadra':'⚠️ No cuadra'}</span><span>${descTxt(r.desc)}</span></div>
-       ${Math.abs(r.desc)>=0.01?`<div class="muted" style="display:block">${r.desc>0?'Hay más dinero del marcado: puede que falte marcar a alguien como pagado en el listado. Si es gente que se apuntó allí mismo, guarda igual y pulsa <b>💶 Apuntar lo que sobra</b> en la caja.':'Falta dinero: revisa el recuento o si hay alguien marcado como pagado que no pagó.'}</div>`:''}`;
+       ${Math.abs(r.desc)>=0.01?`<div class="muted" style="display:block">${r.desc>0?'Hay más dinero del marcado: puede que falte marcar a alguien como pagado en el listado. Si es gente que se apuntó allí mismo, no pasa nada: guarda igual. El ingreso es lo cobrado en la caja.':'Falta dinero: revisa el recuento o si hay alguien marcado como pagado que no pagó.'}</div>`:''}`;
   else h=`<div><span>🔴 Al cerrar</span><b>${money(r.fin)}</b></div>
        <div><span>− Cambio (vuelve a la bolsa)</span><b>${money(-r.ini)}</b></div>
        <div><span>= Cobrado en la caja</span><b>${money(r.recaudado)}</b></div>
@@ -3126,14 +3127,15 @@ function cjIngreso(id){
   const k=(db.cajas||[]).find(x=>x.id===id); if(!k) return; const r=cjCalc(k);
   if(!r.contada){ alert('Primero cuenta la caja al cerrar.'); return; }
   if(r.tipo==='tickets'){
-    if(!(r.desc>=0.01)){ alert('En esta caja no sobra dinero respecto a los listados.'); return; }
+    if(!(r.falta>=0.01)){ alert(r.recaudado<=0?'La caja sale a 0 o negativa: revisa el recuento.':'El ingreso de esta caja ya está apuntado.'); return; }
+    if(r.apuntado>0 && !confirm(`De esta caja ya hay ${money(r.apuntado)} apuntados. ¿Apuntar la diferencia (${money(r.falta)})?`)) return;
     const CT='Comidas y cenas';
     if(!catNames().some(n=>normName(n)===normName(CT))) db.categorias.push({nombre:CT,desc:'Tickets de comidas y cenas populares (se crea desde Listados)'});
     openMov(); setTipo('ingreso');
-    document.getElementById('mImporte').value=r.desc;
+    document.getElementById('mImporte').value=r.falta;
     const fs=document.getElementById('mFiesta'); if(k.fiestaId && [...fs.options].some(o=>o.value===k.fiestaId)) fs.value=k.fiestaId;
     if(k.fecha && k.fecha<=hoyYMD()) document.getElementById('mFecha').value=k.fecha;
-    setMovCat(CT); document.getElementById('mConcepto').value='Tickets de gente sin estar en listas · '+(k.nombre||'caja');
+    setMovCat(CT); document.getElementById('mConcepto').value='Tickets · '+(k.nombre||'caja');
     document.getElementById('mMetodo').value='Efectivo'; repPartes=[]; syncMetodoUI();
     state.cjLink=k.id; return;
   }
@@ -3428,6 +3430,9 @@ function lsPegar(){
 function lsPegarLineas(){ const l=lsListado(); return document.getElementById('lsPegarTxt').value.split(/\r?\n/).map(x=>x.replace(/^\s*(\d+\s*[.)\-:]|[-•*·])\s*/,'').trim()).filter(Boolean).map(x=>lsParse(x,l)).filter(p=>p.nombre); }
 function lsIngreso(){
   const l=lsListado(); if(!l) return; const t=lsTot(l);
+  const kj=(db.cajas||[]).find(k=>k.tipo==='tickets'&&(k.listados||[]).includes(l.id));
+  if(kj){ alert(`Este listado se cobra en la caja «${kj.nombre||'Caja'}».
+El ingreso se apunta desde 💰 Cajas (lo contado menos el cambio), para no apuntarlo dos veces.`); return; }
   const falta=Math.round((t.cobrado-t.pasado)*100)/100;
   if(falta<=0){ alert(t.cobrado?`Todo lo cobrado (${money(t.cobrado)}) ya está apuntado en Movimientos.`:'Todavía no ha pagado nadie.'); return; }
   if(t.pasado>0 && !confirm(`De este listado ya hay ${money(t.pasado)} apuntados en Movimientos.\n¿Apuntar ahora lo que falta (${money(falta)})?`)) return;
