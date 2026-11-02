@@ -3123,6 +3123,12 @@ function delCaja(id){
   if(!confirm(`¿Enviar a la papelera la caja «${k.nombre}»?`+(cjCalc(k).apuntado?'\n(El ingreso que ya apuntaste en Movimientos se queda allí.)':''))) return;
   db.cajas=db.cajas.filter(x=>x.id!==id); papeleraPush('caja',k.nombre||'(caja)',k); save(); render();
 }
+function cjNotaTxt(k,r){
+  let t=`Caja «${k.nombre||'Caja'}»: cambio al empezar ${money(r.ini)} · al cerrar ${money(r.fin)} → cobrado ${money(r.recaudado)}`;
+  if(r.tipo==='tickets'&&r.tickets) t+=` (según listados ${money(r.tickets)}${Math.abs(r.desc)>=0.01?' · '+descTxt(r.desc).toLowerCase():''})`;
+  if(r.tipo==='barra'&&r.tickets) t+=` − tickets de listados ${money(r.tickets)} = barra ${money(r.barra)}`;
+  return t;
+}
 function cjIngreso(id){
   const k=(db.cajas||[]).find(x=>x.id===id); if(!k) return; const r=cjCalc(k);
   if(!r.contada){ alert('Primero cuenta la caja al cerrar.'); return; }
@@ -3137,6 +3143,7 @@ function cjIngreso(id){
     if(k.fecha && k.fecha<=hoyYMD()) document.getElementById('mFecha').value=k.fecha;
     setMovCat(CT); document.getElementById('mConcepto').value='Tickets · '+(k.nombre||'caja');
     document.getElementById('mMetodo').value='Efectivo'; repPartes=[]; syncMetodoUI();
+    document.getElementById('mNota').value=cjNotaTxt(k,r);
     state.cjLink=k.id; return;
   }
   const falta=Math.round((r.barra-r.apuntado)*100)/100;
@@ -3150,6 +3157,7 @@ function cjIngreso(id){
   if(k.fecha && k.fecha<=hoyYMD()) document.getElementById('mFecha').value=k.fecha;
   setMovCat(CAT); document.getElementById('mConcepto').value='Barra · '+(k.nombre||'caja');
   document.getElementById('mMetodo').value='Efectivo'; repPartes=[]; syncMetodoUI();
+  document.getElementById('mNota').value=cjNotaTxt(k,r);
   state.cjLink=k.id;
 }
 
