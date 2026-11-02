@@ -294,6 +294,12 @@
   .app-movil .tb-movs #fFiesta{flex:1 1 100%}
   .app-movil .tb-movs .pill{font-size:12px;padding:4px 9px}
   .app-movil .tb-movs .primary{flex:1 1 100%}
+  /* ---- Fiestas terminadas: sus listados y cajas se esconden ---- */
+  .arch-fiesta{margin-top:16px;border:1px dashed var(--line);border-radius:12px;padding:10px 14px;background:var(--panel)}
+  .arch-fiesta summary{cursor:pointer;font-weight:700;color:var(--muted)}
+  .arch-fiesta[open] summary{margin-bottom:8px;color:var(--txt)}
+  .terminar-sel{max-width:230px}
+  .nt-chips button.term{opacity:.75;border-style:dashed}
   /* ---- Gastos sin ticket y novedades (modo amigos) ---- */
   .sindoc-btn{border-color:var(--x-ambar) !important;font-weight:700}
   .sindoc-btn.on{background:var(--x-ambar) !important;color:#3a2a00 !important}
@@ -2935,10 +2941,12 @@ function renderCajas(){
   const c=activa(); if(!c){ content.innerHTML='<div class="empty">No hay comisiones.</div>'; return; }
   const ro=soloLectura||!!c.cerrada, fiestas=fiestasOrden(c);
   const fNom=fid=>{ const f=fiestas.find(x=>x.id===fid); return f?(EMO[f.tipo]||'🎪')+' '+f.nombre:'Sin fiesta'; };
-  const ks=cajasDe(c.id).slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')||(b.creado||'').localeCompare(a.creado||''));
-  const fds=fondosDe(c.id).slice().sort((a,b)=>(!!a.devuelto-!!b.devuelto)||(b.fecha||'').localeCompare(a.fecha||''));
-  let html=`<div class="section-title"><h2>💰 Cajas</h2>${ro?'':'<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="ghost" onclick="openFondo()">👜 Sacar fondo de cambio</button><button class="primary" onclick="openCaja()">+ Nueva caja</button></div>'}</div>
-  <details class="cj-help" ${ks.length||fds.length?'':'open'}><summary>❓ ¿Cómo se lleva el cambio y las cajas?</summary><ol>
+  const ksAll=cajasDe(c.id).slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')||(b.creado||'').localeCompare(a.creado||''));
+  const fdsAll=fondosDe(c.id).slice().sort((a,b)=>(!!a.devuelto-!!b.devuelto)||(b.fecha||'').localeCompare(a.fecha||''));
+  const term=x=>fiestaTerminada(c,x.fiestaId);
+  const ks=ksAll.filter(k=>!term(k)), fds=fdsAll.filter(f=>!term(f)), ksT=ksAll.filter(term), fdsT=fdsAll.filter(term);
+  let html=`<div class="section-title"><h2>💰 Cajas</h2>${ro?'':`<div style="display:flex;gap:6px;flex-wrap:wrap">${terminarSel(c,[...ksAll,...fdsAll])}<button class="ghost" onclick="openFondo()">👜 Sacar fondo de cambio</button><button class="primary" onclick="openCaja()">+ Nueva caja</button></div>`}</div>
+  <details class="cj-help" ${ksAll.length||fdsAll.length?'':'open'}><summary>❓ ¿Cómo se lleva el cambio y las cajas?</summary><ol>
     <li><b>👜 Fondo de cambio</b>: lo que se saca del banco en billetes y monedas (p. ej. 1.000 €). <b>No es gasto ni ingreso</b>: es dinero de la comisión que cambia de sitio. Se guarda en una bolsa.</li>
     <li><b>Cada caja</b> (la mesa de tickets de la plaza, la barra…) coge de la bolsa un poco de cambio para dar la vuelta: apúntalo en «Al empezar». El programa te dice cuánto queda en la bolsa.</li>
     <li>Con el dinero de las cajas no se paga nada: solo se cobra y se da la vuelta.</li>
@@ -2947,7 +2955,7 @@ function renderCajas(){
     <li><b>🍺 Caja de barra</b>: al cerrar − cambio = <b>lo que ha hecho la barra</b>. Pulsa <b>💶 Apuntar ingreso de barra</b> y queda en Movimientos.</li>
     <li>Al acabar las fiestas, el fondo vuelve al banco: pulsa <b>🏦 Devuelto al banco</b>.</li></ol></details>`;
   // Fondos de cambio
-  html+=fds.map(f=>{ const r=fdCalc(f);
+  const fdCard=f=>{ const r=fdCalc(f);
     if(f.devuelto) return `<div class="fd-card devuelto"><b>👜 ${esc(f.nombre||'Fondo de cambio')}</b> · ${money(r.total)} · <span style="color:var(--green)">🏦 Devuelto al banco${f.devueltoEl?' el '+fmtFecha(f.devueltoEl):''}</span>${ro?'':` <button class="icon-btn ghost" style="margin-left:6px" onclick="fdDevolver('${f.id}')" title="Deshacer">↩️</button>`}</div>`;
     return `<div class="fd-card">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:start">
@@ -2962,11 +2970,12 @@ function renderCajas(){
       ${r.abiertas.length?`<div class="fd-rep">En cajas: ${r.abiertas.map(k=>esc(k.nombre||'Caja')+' '+money(cjTotal(k.inicio))).join(' · ')}</div>`:'<div class="fd-rep">Todo el cambio está en la bolsa.</div>'}
       ${r.bolsa<0?'<div style="color:var(--x-rojo);margin-top:4px">⚠️ Se ha repartido más cambio del que se sacó: revisa el cambio de las cajas.</div>':''}
       ${ro?'':`<div style="margin-top:8px"><button class="ghost" onclick="fdDevolver('${f.id}')">🏦 Devuelto al banco</button></div>`}
-    </div>`; }).join('');
-  if(!ks.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ninguna caja.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openCaja()">+ Nueva caja</button>'}</div>`; return; }
+    </div>`; };
+  html+=fds.map(fdCard).join('');
+  if(!ksAll.length&&!fdsT.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ninguna caja.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openCaja()">+ Nueva caja</button>'}</div>`; return; }
   const tot=ks.reduce((t,k)=>{ const r=cjCalc(k); if(r.contada){ if(r.tipo==='barra'){ t.barra+=r.barra; t.nb++; } else { t.tic+=r.recaudado; t.nt++; } } return t; },{barra:0,nb:0,tic:0,nt:0});
   if(tot.nb||tot.nt) html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">${tot.nb?`<span class="pill">🍺 Barras: <b>${money(tot.barra)}</b> (${tot.nb})</span>`:''}${tot.nt?`<span class="pill">🎟️ Tickets cobrados en cajas: <b>${money(tot.tic)}</b> (${tot.nt})</span>`:''}</div>`;
-  html+=ks.map(k=>{ const r=cjCalc(k), fd=(db.fondos||[]).find(f=>f.id===k.fondoId);
+  const cjCard=k=>{ const r=cjCalc(k), fd=(db.fondos||[]).find(f=>f.id===k.fondoId);
     const nums=r.tipo==='tickets'
       ? `<div class="cj-num"><div class="l">🟢 Cambio</div><div class="v">${money(r.ini)}</div></div>
          <div class="cj-num"><div class="l">🔴 Al cerrar</div><div class="v">${r.contada?money(r.fin):'—'}</div></div>
@@ -2986,7 +2995,14 @@ function renderCajas(){
         ${r.tipo==='barra'&&r.contada&&r.estado!=='apuntada'?`<button class="primary" onclick="cjIngreso('${k.id}')">💶 Apuntar ingreso de barra</button>`:''}
         ${r.tipo==='tickets'&&r.contada&&r.falta>=0.01?`<button class="primary" onclick="cjIngreso('${k.id}')" title="Lo contado al cerrar menos el cambio">💶 Apuntar ingreso de tickets (${money(r.falta)})</button>`:''}
         <button class="icon-btn danger" onclick="delCaja('${k.id}')" title="Borrar">🗑️</button></div>`}
-    </div>`; }).join('');
+    </div>`; };
+  if(!ks.length) html+=`<div class="card empty">No hay cajas de fiestas en curso.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openCaja()">+ Nueva caja</button>'}</div>`;
+  html+=ks.map(cjCard).join('');
+  // Fiestas terminadas: plegadas abajo del todo
+  html+=fiestas.filter(f=>f.terminada&&(ksT.some(k=>k.fiestaId===f.id)||fdsT.some(x=>x.fiestaId===f.id))).map(f=>{
+    const a=ksT.filter(k=>k.fiestaId===f.id), b=fdsT.filter(x=>x.fiestaId===f.id);
+    return `<details class="arch-fiesta"><summary>📦 ${EMO[f.tipo]||'🎪'} ${esc(f.nombre)} · terminada <span class="muted" style="font-weight:400">(${a.length} caja${a.length===1?'':'s'}${b.length?' · '+b.length+' fondo'+(b.length===1?'':'s')+' de cambio':''})</span></summary>
+      ${ro?'':`<div style="margin-bottom:10px"><button class="ghost" onclick="setTerminada('${f.id}',false)">↩️ Volver a mostrar como presente</button></div>`}${b.map(fdCard).join('')}${a.map(cjCard).join('')}</details>`; }).join('');
   content.innerHTML=html;
 }
 /* ---- Fondo de cambio ---- */
@@ -3166,6 +3182,26 @@ let lsSel='', lsSearch='', lsFiltro='', lsVia='bar', lsEditId=null, lsApEditId=n
 const LS_VIAS={bar:'🍺 Lista del bar',whatsapp:'💬 WhatsApp',instagram:'📸 Instagram',correo:'✉️ Correo',persona:'🗣️ En persona',otro:'• Otro'};
 const LS_SUGER=[['Niño',''],['Solo postre y café',''],['Bebé',0]];
 function listadosDe(cid){ return (db.listados||[]).filter(l=>l.comisionId===cid); }
+/* Fiesta terminada: sus listados, cajas y fondos de cambio dejan de verse como presentes (no se borra nada) */
+let lsVerTerm=false;
+function fiestaTerminada(c,fid){ const f=((c&&c.fiestas)||[]).find(x=>x.id===fid); return !!(f&&f.terminada); }
+function setTerminada(fid,v){
+  const c=activa(), f=c&&c.fiestas.find(x=>x.id===fid); if(!f) return;
+  if(v) f.terminada=true; else delete f.terminada;
+  if(!v) lsVerTerm=false;
+  save(); render(); avisoBreve(v?`📦 «${f.nombre}» terminada: sus listados y cajas quedan guardados abajo`:`↩️ «${f.nombre}» vuelve a verse como presente`);
+}
+function terminarFiesta(fid){
+  const c=activa(), f=c&&c.fiestas.find(x=>x.id===fid); if(!f){ render(); return; }
+  if(!confirm(`¿Dar por terminada «${f.nombre}»?\n\nSus listados y cajas se esconden (no se borra nada). Se pueden volver a ver y a mostrar cuando quieras.`)){ render(); return; }
+  setTerminada(fid,true);
+}
+/* Desplegable «📦 Dar por terminada…» con las fiestas que tienen algo a la vista */
+function terminarSel(c,items){
+  const fs=fiestasOrden(c).filter(f=>!f.terminada&&items.some(x=>x.fiestaId===f.id));
+  if(!fs.length) return '';
+  return `<select class="terminar-sel" onchange="if(this.value)terminarFiesta(this.value)" title="Cuando una fiesta ya ha pasado, esconde sus listados y cajas"><option value="">📦 Dar por terminada…</option>${fs.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('')}</select>`;
+}
 function lsNum(v){ const n=parseFloat(v); return isNaN(n)?0:Math.max(0,n); }
 function lsInt(v){ return Math.max(0,Math.floor(+v||0)); }
 /* Cada listado tiene tarifas (Adulto 17 €, Niño 8 €, Solo postre 3 €…) y cada apunte dice cuántos van de cada una.
@@ -3231,7 +3267,7 @@ function lsParse(txt,l){
   return {nombre,n,hay};
 }
 function lsActual(c){
-  const ls=listadosDe(c.id); if(!ls.length) return null;
+  const ls=listadosDe(c.id).filter(x=>lsVerTerm||!fiestaTerminada(c,x.fiestaId)); if(!ls.length) return null;
   let l=ls.find(x=>x.id===lsSel);
   if(!l){ const h=hoyYMD(); l=ls.filter(x=>x.fecha&&x.fecha>=h).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0]||ls[ls.length-1]; lsSel=l.id; }
   return l;
@@ -3241,12 +3277,16 @@ function renderListados(){
   const ro=soloLectura||!!c.cerrada;
   const fiestas=fiestasOrden(c);
   const fNom=fid=>{ const f=fiestas.find(x=>x.id===fid); return f?(EMO[f.tipo]||'🎪')+' '+f.nombre:''; };
-  const ls=listadosDe(c.id).slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
-  let html=`<div class="section-title"><h2>📋 Listados</h2>${ro?'':'<button class="primary" onclick="openListado()">+ Nuevo listado</button>'}</div>
+  const lsAll=listadosDe(c.id).slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}));
+  const nTerm=lsAll.filter(x=>fiestaTerminada(c,x.fiestaId)).length; if(!nTerm) lsVerTerm=false;
+  const ls=lsAll.filter(x=>lsVerTerm||!fiestaTerminada(c,x.fiestaId));
+  let html=`<div class="section-title"><h2>📋 Listados</h2>${ro?'':`<div style="display:flex;gap:6px;flex-wrap:wrap">${terminarSel(c,lsAll)}<button class="primary" onclick="openListado()">+ Nuevo listado</button></div>`}</div>
   <p class="muted" style="margin:-6px 0 12px">La gente que se apunta a cada comida o cena (por la lista del bar, WhatsApp, Instagram, correo…) y quién ha pagado. Comisión <b>${esc(c.nombre)}</b>.</p>`;
+  if(!ls.length&&nTerm){ content.innerHTML=html+`<div class="card empty">No hay listados de fiestas en curso.<br><span class="muted">Los de las fiestas terminadas están guardados.</span><br><button style="margin-top:12px" onclick="lsVerTerm=true;lsSel='';renderListados()">📦 Ver los de fiestas terminadas (${nTerm})</button>${ro?'':' <button class="primary" style="margin-top:12px" onclick="openListado()">+ Nuevo listado</button>'}</div>`; return; }
   if(!ls.length){ content.innerHTML=html+`<div class="card empty">Todavía no hay ningún listado.<br>Crea uno por cada comida o cena (p. ej. «Comida de Halloween») y ve apuntando a la gente.${ro?'':'<br><button class="primary" style="margin-top:12px" onclick="openListado()">+ Nuevo listado</button>'}</div>`; return; }
   const l=lsActual(c), t=lsTot(l), ts=lsTarifas(l);
-  html+=`<div class="nt-chips" style="margin-bottom:10px">${ls.map(x=>{ const tt=lsTot(x); return `<button class="${x.id===l.id?'on':''}" onclick="lsSel='${x.id}';lsSearch='';lsFiltro='';renderListados()">${esc((EMO[(fiestas.find(f=>f.id===x.fiestaId)||{}).tipo]||'📋')+' '+x.nombre)} · ${tt.personas}</button>`; }).join('')}</div>`;
+  html+=`<div class="nt-chips" style="margin-bottom:10px">${ls.map(x=>{ const tt=lsTot(x); return `<button class="${x.id===l.id?'on':''} ${fiestaTerminada(c,x.fiestaId)?'term':''}" onclick="lsSel='${x.id}';lsSearch='';lsFiltro='';renderListados()">${esc((EMO[(fiestas.find(f=>f.id===x.fiestaId)||{}).tipo]||'📋')+' '+x.nombre)} · ${tt.personas}</button>`; }).join('')}${nTerm?`<button class="term" onclick="lsVerTerm=!lsVerTerm;lsSel='';renderListados()">${lsVerTerm?'🙈 Esconder terminadas':'📦 Fiestas terminadas ('+nTerm+')'}</button>`:''}</div>`;
+  if(fiestaTerminada(c,l.fiestaId)) html+=`<div class="banner filtro-aviso"><span>📦 Este listado es de <b>${esc(fNom(l.fiestaId))}</b>, que está terminada.</span>${ro?'':`<button onclick="setTerminada('${l.fiestaId}',false)">↩️ Volver a mostrar</button>`}</div>`;
   html+=`<div class="ls-head"><div style="flex:1 1 260px"><h3>${esc(l.nombre)}</h3>
       <div class="muted">${l.fecha?'📅 '+fmtFecha(l.fecha)+(diasHasta(l.fecha)>=0?' ('+cuandoTxt(l.fecha)+')':'')+' · ':''}${esc(fNom(l.fiestaId)||'Sin fiesta')} · 💶 ${esc(lsPrecioTxt(l))}</div>
       ${l.nota?`<div class="muted" style="margin-top:3px;white-space:pre-wrap">${esc(l.nota)}</div>`:''}</div>
