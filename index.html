@@ -1583,7 +1583,7 @@ function renderResumen(){
       <div class="fc-bar"><span class="muted">Ingresos</span><span class="tr"><span style="width:${pc(ft.ing)}%;background:var(--green)"></span></span><span class="money pos">${money(ft.ing)}</span></div>
       <div class="fc-bar"><span class="muted">Gastos</span><span class="tr"><span style="width:${pc(ft.gasPag)}%;background:var(--red)"></span></span><span class="money neg">${money(ft.gasPag)}</span></div>
       ${ft.pendiente>0?`<div class="fc-pend">⏳ Pendiente de pagar: <b>${money(ft.pendiente)}</b></div>`:''}
-      <div class="fc-acc"><button class="icon-btn ghost" onclick="verFiesta('${f.id}')">Ver →</button><button class="icon-btn ghost" onclick="openCierre('${c.id}','${f.id}')">📄 Resumen</button>${(n=>n?`<button class="icon-btn ghost" onclick="exportarFacturas('${c.id}','${f.id}')" title="Descargar una carpeta (ZIP) con todos los documentos de esta fiesta">📎 Facturas (${n})</button>`:'')(movsDe(c.id).filter(m=>m.fiestaId===f.id).reduce((t,m)=>t+adjuntosDe(m).length,0))}</div>
+      <div class="fc-acc"><button class="icon-btn ghost" onclick="verFiesta('${f.id}')">Ver →</button><button class="icon-btn ghost" onclick="openCierre('${c.id}','${f.id}')">📄 Resumen</button>${movsDe(c.id).some(m=>m.fiestaId===f.id)?`<button class="icon-btn ghost" onclick="exportarFacturas('${c.id}','${f.id}')" title="Descargar una carpeta (ZIP) con el Excel de las cuentas (resumen, gastos e ingresos) y todas las facturas de esta fiesta, lista para subir a Drive">📁 Cuentas y facturas</button>`:''}</div>
     </div>`;
   });
   html+=`</div>`;
@@ -2229,14 +2229,21 @@ function delComi(id){const c=db.comisiones.find(x=>x.id===id);if(!c)return;const
   papeleraPush('comision', c.nombre, {comision:c, movimientos:movs});
   if(db.activaId===id)db.activaId=db.comisiones[0]?db.comisiones[0].id:null;save();render();}
 function limpiarFiltros(){const fi=state.filtro.fiesta;state.filtro={fiesta:fi,tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:'',sindoc:false,novedades:false};renderMovs();}
-/* ---- Exportar facturas de una fiesta: ZIP con una carpeta y todos los documentos + listado ---- */
-let jsZipCargando=null;
+/* ---- Exportar las cuentas de una fiesta: ZIP con una carpeta «<fiesta>» que lleva el Excel (resumen, gastos, ingresos) y la carpeta Facturas ---- */
+let jsZipCargando=null, excelJSCargando=null;
 function cargarJSZip(){
   if(window.JSZip) return Promise.resolve();
   if(jsZipCargando) return jsZipCargando;
   jsZipCargando=new Promise((ok,ko)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
     sc.onload=()=>ok(); sc.onerror=()=>{ jsZipCargando=null; ko(new Error('sin conexión')); }; document.head.appendChild(sc); });
   return jsZipCargando;
+}
+function cargarExcelJS(){
+  if(window.ExcelJS) return Promise.resolve();
+  if(excelJSCargando) return excelJSCargando;
+  excelJSCargando=new Promise((ok,ko)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+    sc.onload=()=>ok(); sc.onerror=()=>{ excelJSCargando=null; ko(new Error('sin conexión')); }; document.head.appendChild(sc); });
+  return excelJSCargando;
 }
 function nombreSeguro(t){ return String(t||'').replace(/[\\/:*?"<>|\r\n\t]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90); }
 async function bytesDeAdjunto(src){
@@ -2252,34 +2259,117 @@ function extDeAdjunto(a,mime){
   if(m) return m[1].toLowerCase();
   return ({'image/jpeg':'jpg','image/png':'png','application/pdf':'pdf'})[(mime||'').split(';')[0]] || (a.kind==='img'?'jpg':'bin');
 }
+function estadoPagoTxt(m){ const e=m.estadoPago||'pagado'; return e==='pendiente'?'Pendiente de pagar':e==='parcial'?('Pagado '+money(pagadoDe(m))+' de '+money(m.importe)):'Pagado'; }
+/* Notas automáticas del resumen: cajas, fondo de cambio, pendientes y gastos sin factura */
+function notasCuentas(c,f,gas){
+  const n=[], r2=x=>Math.round(x*100)/100;
+  const ks=cajasDe(c.id).filter(k=>k.fiestaId===f.id), fds=fondosDe(c.id).filter(x=>x.fiestaId===f.id);
+  fds.forEach(x=>n.push(`Fondo de cambio «${x.nombre||'Cambio'}»: se sacaron ${money(fdImporte(x))} del banco${x.devuelto?' · devuelto'+(x.devueltoEl?' el '+fmtFecha(x.devueltoEl):''):' · sin devolver todavía'}.${x.nota?' '+x.nota:''}`));
+  if(ks.length){
+    let tot=0; ks.forEach(k=>{ const r=cjCalc(k); tot+=r.fin; n.push(`Caja «${k.nombre||'Caja'}»: cambio al empezar ${money(r.ini)} · al cerrar ${money(r.fin)} → cobrado ${money(r.recaudado)}.`); });
+    n.push(`En total, en las cajas había ${money(r2(tot))} al cerrar. Los ingresos de cada caja son lo contado menos su cambio inicial.`);
+  }
+  const pend=gas.filter(m=>(m.estadoPago||'pagado')!=='pagado'); if(pend.length) n.push(`Falta por pagar ${money(pend.reduce((t,m)=>t+(+m.importe||0)-pagadoDe(m),0))}: ${pend.map(m=>m.concepto||'(sin concepto)').join(', ')}.`);
+  const sin=gas.filter(m=>!adjuntosDe(m).length); if(sin.length) n.push(`${sin.length===1?'Hay 1 gasto':'Hay '+sin.length+' gastos'} sin factura: ${sin.map(m=>(m.concepto||'(sin concepto)')+' ('+money(m.importe)+')').join(', ')}.`);
+  n.push('Las facturas de cada gasto están en la carpeta «Facturas», numeradas igual que la hoja Gastos.');
+  return n;
+}
+async function excelCuentas(c,f,gas,ing,ficheros){
+  const wb=new ExcelJS.Workbook(); wb.creator='Contabilidad de Fiestas'; wb.calcProperties.fullCalcOnLoad=true;
+  const F='Arial', MON='#,##0.00 "€";-#,##0.00 "€";"-"', GRIS='FF64748B', OSC='FF1E293B';
+  const linea={style:'thin',color:{argb:'FFCBD5E1'}}, caja={top:linea,bottom:linea,left:linea,right:linea};
+  const fecha=iso=>{ if(!iso) return ''; const [y,m,d]=iso.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)); };
+  const sum=a=>Math.round(a.reduce((t,v)=>t+(+v||0),0)*100)/100;
+  const tabla=(ws,titulo,cab,anchos,filas,monCols)=>{
+    ws.getCell('A1').value=titulo; ws.getCell('A1').font={name:F,bold:true,size:14};
+    cab.forEach((t,i)=>{ const x=ws.getCell(3,i+1); x.value=t; x.font={name:F,bold:true,color:{argb:'FFFFFFFF'}}; x.fill={type:'pattern',pattern:'solid',fgColor:{argb:OSC}}; x.alignment={vertical:'middle',wrapText:true}; ws.getColumn(i+1).width=anchos[i]; });
+    filas.forEach((fila,r)=>fila.forEach((v,i)=>{ const x=ws.getCell(4+r,i+1); x.value=v; x.font={name:F}; x.border=caja; x.alignment={vertical:'top',wrapText:true}; if(monCols.includes(i+1)) x.numFmt=MON; if(v instanceof Date) x.numFmt='dd/mm/yyyy'; }));
+    ws.views=[{state:'frozen',ySplit:3}]; ws.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0};
+    return [4,3+Math.max(filas.length,1)];
+  };
+  // Gastos
+  const wg=wb.addWorksheet('Gastos');
+  const [g0,g1]=tabla(wg,f.nombre+' · Gastos',['Nº','Fecha','Concepto','Proveedor','Categoría','Pago','Estado','Importe','Factura (carpeta Facturas)'],[5,11,48,15,18,11,20,13,52],
+    gas.map((m,i)=>[i+1,fecha(m.fecha),m.concepto||'',m.proveedor||'',m.categoria||'',m.metodo||'',estadoPagoTxt(m),+m.importe||0,(ficheros[m.id]||[]).join('\n')]),[8]);
+  gas.forEach((m,i)=>{ const x=wg.getCell(g0+i,9), fs=ficheros[m.id]||[];
+    if(fs.length){ x.value={text:fs.join('\n'),hyperlink:'Facturas/'+fs[0]}; x.font={name:F,color:{argb:'FF1D4ED8'},underline:true}; }
+    else{ x.value='Sin factura'; x.font={name:F,italic:true,color:{argb:GRIS}}; }
+    if((m.estadoPago||'pagado')!=='pagado') wg.getCell(g0+i,7).font={name:F,bold:true,color:{argb:'FFB45309'}}; });
+  wg.getCell(g1+1,7).value='TOTAL'; wg.getCell(g1+1,7).font={name:F,bold:true};
+  wg.getCell(g1+1,8).value={formula:`SUM(H${g0}:H${g1})`,result:sum(gas.map(m=>m.importe))}; wg.getCell(g1+1,8).numFmt=MON; wg.getCell(g1+1,8).font={name:F,bold:true};
+  // Ingresos
+  const wi=wb.addWorksheet('Ingresos');
+  const [i0,i1]=tabla(wi,f.nombre+' · Ingresos',['Nº','Fecha','Concepto','Categoría','Cobro','Importe','Nota'],[5,11,46,18,11,13,70],
+    ing.map((m,i)=>[i+1,fecha(m.fecha),m.concepto||'',m.categoria||'',m.metodo||'',+m.importe||0,m.nota||'']),[6]);
+  wi.getCell(i1+1,5).value='TOTAL'; wi.getCell(i1+1,5).font={name:F,bold:true};
+  wi.getCell(i1+1,6).value={formula:`SUM(F${i0}:F${i1})`,result:sum(ing.map(m=>m.importe))}; wi.getCell(i1+1,6).numFmt=MON; wi.getCell(i1+1,6).font={name:F,bold:true};
+  // Resumen (primera hoja)
+  const wr=wb.addWorksheet('Resumen'); wr.orderNo=0; wg.orderNo=1; wi.orderNo=2;
+  wr.getColumn(1).width=36; wr.getColumn(2).width=16; wr.getColumn(3).width=50; wr.views=[{showGridLines:false}];
+  wr.getCell('A1').value=f.nombre+' · Resumen de cuentas'; wr.getCell('A1').font={name:F,bold:true,size:14};
+  wr.getCell('A2').value=`${c.nombre} · sacado del programa de contabilidad el ${fmtFecha(hoyISO())}`; wr.getCell('A2').font={name:F,italic:true,color:{argb:GRIS}};
+  const G=`Gastos!$H$${g0}:$H$${g1}`, I=`Ingresos!$F$${i0}:$F$${i1}`;
+  let r=4;
+  const head=t=>{ [1,2,3].forEach(k=>wr.getCell(r,k).fill={type:'pattern',pattern:'solid',fgColor:{argb:OSC}}); wr.getCell(r,1).value=t; wr.getCell(r,1).font={name:F,bold:true,color:{argb:'FFFFFFFF'}}; r++; };
+  const put=(t,formula,result,{bold=false,fill=null,big=false,nota=''}={})=>{ const fo={name:F,bold,size:big?12:10};
+    wr.getCell(r,1).value=t; wr.getCell(r,1).font=fo;
+    if(formula!=null){ const x=wr.getCell(r,2); x.value={formula,result}; x.numFmt=MON; x.font=fo; }
+    if(nota){ wr.getCell(r,3).value=nota; wr.getCell(r,3).font={name:F,color:{argb:GRIS}}; }
+    if(fill) [1,2,3].forEach(k=>wr.getCell(r,k).fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}}); return r++; };
+  const q=s=>String(s).replace(/"/g,'""');
+  head('INGRESOS'); const ri0=r;
+  [...new Set(ing.map(m=>m.categoria||''))].forEach(k=>put(k||'(sin categoría)',`SUMIFS(${I},Ingresos!$D$${i0}:$D$${i1},"${q(k)}")`,sum(ing.filter(m=>(m.categoria||'')===k).map(m=>m.importe))));
+  const RI=put('Total ingresos',`SUM(B${ri0}:B${Math.max(ri0,r-1)})`,sum(ing.map(m=>m.importe)),{bold:true,fill:'FFE2E8F0'});
+  r++; head('GASTOS'); const rg0=r;
+  [...new Set(gas.map(m=>m.categoria||''))].forEach(k=>put(k||'(sin categoría)',`SUMIFS(${G},Gastos!$E$${g0}:$E$${g1},"${q(k)}")`,sum(gas.filter(m=>(m.categoria||'')===k).map(m=>m.importe))));
+  const RG=put('Total gastos',`SUM(B${rg0}:B${Math.max(rg0,r-1)})`,sum(gas.map(m=>m.importe)),{bold:true,fill:'FFE2E8F0'});
+  put('   de ellos pendiente de pagar',`SUMIFS(${G},Gastos!$G$${g0}:$G$${g1},"Pendiente de pagar")`,sum(gas.filter(m=>m.estadoPago==='pendiente').map(m=>m.importe)));
+  r++; const benef=sum(ing.map(m=>m.importe))-sum(gas.map(m=>m.importe));
+  put(benef>=0?'BENEFICIO':'PÉRDIDA',`B${RI}-B${RG}`,Math.round(benef*100)/100,{bold:true,big:true,fill:benef>=0?'FFDCFCE7':'FFFEE2E2'});
+  r++; head('DINERO');
+  const porMet=(arr,met)=>sum(arr.filter(m=>(m.metodo||'')===met).map(m=>m.importe));
+  put('Cobrado en efectivo',`SUMIFS(${I},Ingresos!$E$${i0}:$E$${i1},"Efectivo")`,porMet(ing,'Efectivo'));
+  put('Cobrado por banco',`SUMIFS(${I},Ingresos!$E$${i0}:$E$${i1},"Banco")`,porMet(ing,'Banco'));
+  put('Pagado en efectivo',`SUMIFS(${G},Gastos!$F$${g0}:$F$${g1},"Efectivo")`,porMet(gas,'Efectivo'));
+  put('Pagado / a pagar por banco',`SUMIFS(${G},Gastos!$F$${g0}:$F$${g1},"Banco")`,porMet(gas,'Banco'));
+  r++; head('NOTAS');
+  notasCuentas(c,f,gas).forEach(t=>{ wr.mergeCells(r,1,r,3); const x=wr.getCell(r,1); x.value='• '+t; x.font={name:F}; x.alignment={wrapText:true,vertical:'top'}; wr.getRow(r).height=Math.max(15,Math.ceil(t.length/95)*15); r++; });
+  wr.pageSetup={orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0};
+  return new Uint8Array(await wb.xlsx.writeBuffer());
+}
 async function exportarFacturas(cid,fid){
   const c=db.comisiones.find(x=>x.id===cid); const f=c&&(c.fiestas||[]).find(x=>x.id===fid); if(!f) return;
-  const movs=movsDe(cid).filter(m=>m.fiestaId===fid && adjuntosDe(m).length).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  const movs=movsDe(cid).filter(m=>m.fiestaId===fid).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')||(a.tipo||'').localeCompare(b.tipo||''));
+  if(!movs.length){ alert('Esta fiesta no tiene movimientos.'); return; }
+  const gas=movs.filter(m=>m.tipo==='gasto'), ing=movs.filter(m=>m.tipo==='ingreso');
   const total=movs.reduce((t,m)=>t+adjuntosDe(m).length,0);
-  if(!total){ alert('Esta fiesta no tiene documentos adjuntos.'); return; }
-  avisoBreve('⏳ Preparando '+total+' documento'+(total===1?'':'s')+'…');
-  try{ await cargarJSZip(); }catch(e){ alert('Para crear la carpeta hace falta conexión a internet (solo la primera vez que se usa).'); return; }
+  avisoBreve('⏳ Preparando las cuentas'+(total?' y '+total+' documento'+(total===1?'':'s'):'')+'…');
+  try{ await Promise.all([cargarJSZip(),cargarExcelJS()]); }catch(e){ alert('Para crear la carpeta hace falta conexión a internet (solo la primera vez que se usa).'); return; }
   const carpetaNombre=nombreSeguro(f.nombre)+(f.tipo==='otro'&&c?(' '+c.nombre.replace(/^Comisión\s*/,'')):'');
-  const zip=new JSZip(); const dir=zip.folder(carpetaNombre);
-  const usados={};
+  const zip=new JSZip(); const dir=zip.folder(carpetaNombre), fdir=dir.folder('Facturas');
+  const usados={}, ficheros={};
   let ok=0, fallos=[];
-  for(const m of movs){
-    const adjs=adjuntosDe(m);
+  // gastos numerados como en la hoja Gastos; los documentos de ingresos van detrás con «Ingreso»
+  const lista=[...gas.map((m,i)=>({m,pre:String(i+1).padStart(2,'0')})), ...ing.filter(m=>adjuntosDe(m).length).map((m,i)=>({m,pre:'Ingreso '+String(i+1).padStart(2,'0')}))];
+  for(const {m,pre} of lista){
+    const adjs=adjuntosDe(m); ficheros[m.id]=[];
     for(let i=0;i<adjs.length;i++){
       const a=adjs[i];
       try{
         const {u8,mime}=await bytesDeAdjunto(a.src);
-        const base=nombreSeguro((m.fecha||'sin fecha')+' - '+(m.concepto||'(sin concepto)')+' - '+money(m.importe))+(adjs.length>1?' ('+(i+1)+')':'');
+        const base=nombreSeguro(pre+' - '+(m.fecha||'sin fecha')+' - '+String(m.concepto||'(sin concepto)').split(/[,(]/)[0].trim().slice(0,50)+' - '+money(m.importe))+(adjs.length>1?' ('+(i+1)+')':'');
         let nom=base+'.'+extDeAdjunto(a,mime); let k=2; while(usados[nom]){ nom=base+' ['+(k++)+'].'+extDeAdjunto(a,mime); } usados[nom]=1;
-        dir.file(nom,u8);
+        fdir.file(nom,u8); ficheros[m.id].push(nom);
         ok++;
       }catch(e){ fallos.push((m.concepto||'')+' ('+e.message+')'); }
     }
   }
+  try{ dir.file(carpetaNombre+' - Cuentas.xlsx', await excelCuentas(c,f,gas,ing,ficheros)); }
+  catch(e){ alert('No se pudo crear el Excel: '+e.message); return; }
   const blob=await zip.generateAsync({type:'blob'});
-  const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=carpetaNombre+' - Facturas.zip'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),60000);
-  if(fallos.length) alert('Se han guardado '+ok+' documentos, pero '+fallos.length+' no se pudieron descargar:\n- '+fallos.join('\n- '));
-  else avisoBreve('✅ Carpeta «'+carpetaNombre+'» descargada con '+ok+' documento'+(ok===1?'':'s'));
+  const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=carpetaNombre+' - Cuentas y facturas.zip'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),60000);
+  if(fallos.length) alert('Se ha creado el Excel y '+ok+' documentos, pero '+fallos.length+' no se pudieron descargar:\n- '+fallos.join('\n- '));
+  else avisoBreve('✅ Carpeta «'+carpetaNombre+'» descargada: Excel de cuentas y '+ok+' documento'+(ok===1?'':'s'));
 }
 function verFiesta(fid){state.tab='movs';state.filtro={fiesta:fid,tipo:'',texto:'',estado:'',categoria:'',metodo:'',desde:'',hasta:''};render();}
 /* ---- ADJUNTOS (fotos y documentos) ---- */
