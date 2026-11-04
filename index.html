@@ -3878,6 +3878,7 @@ function stOrdenar(a,b){ return (stOrden(a)-stOrden(b))||(a.nombre||'').localeCo
 function r2(v){ return Math.round((Number(v)||0)*100)/100; }
 function stMovs(x){ return Array.isArray(x.movs)?x.movs:[]; }
 function stEntradas(x){ return r2(stMovs(x).filter(m=>m.tipo==='entrada').reduce((t,m)=>t+(Number(m.cantidad)||0),0)); }
+function stEntradasF(x,fid){ return r2(stMovs(x).filter(m=>m.tipo==='entrada' && (m.fiestaId||'')===fid).reduce((t,m)=>t+(Number(m.cantidad)||0),0)); }
 function stSalidas(x,fid){ return r2(stMovs(x).filter(m=>m.tipo==='salida' && (fid===undefined || (m.fiestaId||'')===fid)).reduce((t,m)=>t+(Number(m.cantidad)||0),0)); }
 function stStock(x){ if(!Array.isArray(x.movs) && x.inicial==null) return Number(x.cantidad)||0; return r2((Number(x.inicial)||0)+stEntradas(x)-stSalidas(x)); }
 function stSync(x){ x.cantidad=stStock(x); }
@@ -4007,13 +4008,16 @@ function stockHistHtml(){
   if(!list.length) return html+`<div class="card empty">No hay artículos con ese filtro.</div>`;
   const esAct=act&&elegida.id===act.id;
   const fiestas=fiestasOrden(elegida).filter(f=>f.activa);
-  const sinF=list.some(x=>stSalidas(x,'')>0);
+  // Cada fiesta lleva dos columnas: lo comprado para ella (➕) y lo gastado en ella (➖)
+  const sinE=list.some(x=>stEntradasF(x,'')>0), sinS=list.some(x=>stSalidas(x,'')>0);
+  const grupos=[...fiestas.map(f=>({th:`${EMO[f.tipo]||'🎪'} ${esc(ST_ABR[f.tipo]||f.nombre)} <span style="font-weight:400">${f.anio||''}</span>`, fid:f.id, nom:f.nombre, e:true, s:true})),
+    ...((sinE||sinS)?[{th:'Sin fiesta', fid:'', nom:'ninguna fiesta', e:sinE, s:sinS}]:[])];
   const cols=[
-    {k:'ini', th:'🏁 Al<br><span style="font-weight:400">empezar</span>', v:x=>Number(x.inicial)||0, cls:'gl'},
-    ...fiestas.map((f,i)=>({k:f.id, th:`${EMO[f.tipo]||'🎪'} ${esc(ST_ABR[f.tipo]||f.nombre)}<br><span style="font-weight:400">${f.anio||''}</span>`, v:x=>stSalidas(x,f.id), cls:'sal'+(i===0?' gl':''), title:'Gastado en '+f.nombre})),
-    ...(sinF?[{k:'sin', th:'➖ Sin<br><span style="font-weight:400">fiesta</span>', v:x=>stSalidas(x,''), cls:'sal'}]:[]),
-    {k:'rep', th:'➕ Entradas<br><span style="font-weight:400">/ compras</span>', v:x=>stEntradas(x), cls:'ent gl'},
-    {k:'q', th:esAct?'📦 Hay<br><span style="font-weight:400">ahora</span>':'📦 Quedó<br><span style="font-weight:400">al final</span>', v:x=>stStock(x), cls:'quedo'}
+    {k:'ini', th:'🏁 Al<br><span style="font-weight:400">empezar</span>', v:x=>Number(x.inicial)||0, cls:'gl', solo:true},
+    ...grupos.flatMap(g=>[
+      ...(g.e?[{k:'e'+g.fid, th:'➕ Compra', v:x=>stEntradasF(x,g.fid), cls:'ent gl', title:'Comprado / repuesto para '+g.nom}]:[]),
+      ...(g.s?[{k:'s'+g.fid, th:'➖ Gasta', v:x=>stSalidas(x,g.fid), cls:'sal'+(g.e?'':' gl'), title:'Gastado en '+g.nom}]:[])]),
+    {k:'q', th:esAct?'📦 Hay<br><span style="font-weight:400">ahora</span>':'📦 Quedó<br><span style="font-weight:400">al final</span>', v:x=>stStock(x), cls:'quedo gl', solo:true}
   ];
   const tot=cols.map(()=>0);
   const cats=stCatsOrden([...new Set(list.map(x=>x.categoria||'Otros'))]);
@@ -4027,10 +4031,10 @@ function stockHistHtml(){
     });
   });
   return html+`<div class="st-wrap"><table class="st-tbl st-hist"><thead>
-      <tr><th rowspan="2" style="vertical-align:bottom">Producto</th><th class="grp" colspan="${cols.length}">${esc(elegida.nombre)}${esAct?' · actual':''}</th></tr>
-      <tr>${cols.map(c=>`<th class="n ${c.cls.replace(/sal|ent|quedo/g,'')}"${c.title?` title="${esc(c.title)}"`:''}>${c.th}</th>`).join('')}</tr></thead>
+      <tr><th rowspan="2" style="vertical-align:bottom">Producto</th><th rowspan="2" class="n gl" style="vertical-align:bottom">${cols[0].th}</th>${grupos.map(g=>`<th class="grp" colspan="${(g.e?1:0)+(g.s?1:0)}">${g.th}</th>`).join('')}<th rowspan="2" class="n gl" style="vertical-align:bottom">${cols[cols.length-1].th}</th></tr>
+      <tr>${cols.filter(c=>!c.solo).map(c=>`<th class="n ${c.cls.replace(/sal|ent|quedo/g,'')}"${c.title?` title="${esc(c.title)}"`:''}>${c.th}</th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody><tfoot><tr class="tot"><td>Total en €</td>${tot.map((v,i)=>`<td class="n ${cols[i].cls.replace(/quedo/,'')}">${money(v)}</td>`).join('')}</tr></tfoot></table></div>
-    <p class="muted" style="font-size:12px;margin-top:8px">Al empezar + entradas − gastado = lo que queda. En comisiones importadas del Excel, «entradas» junta existencias y compras (sin detalle). Lo que quedó al acabar una comisión es con lo que empieza la siguiente.</p>`;
+    <p class="muted" style="font-size:12px;margin-top:8px">Al empezar + lo comprado − lo gastado = lo que queda. Cada fiesta muestra lo que se compró para ella (➕) y lo que se gastó en ella (➖). En comisiones importadas del Excel, las compras sin fiesta juntan existencias y compras (sin detalle). Lo que quedó al acabar una comisión es con lo que empieza la siguiente.</p>`;
 }
 let stCatPrevia='';
 function poblarStCat(sel){
