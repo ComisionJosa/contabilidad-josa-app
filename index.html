@@ -3152,7 +3152,8 @@ function openCaja(id){
   ['inicio','fin'].forEach(x=>{ if(!cjDraft[x]) cjDraft[x]={}; }); if(!Array.isArray(cjDraft.listados)) cjDraft.listados=[];
   if(!cjDraft.tipo) cjDraft.tipo=k?'barra':'tickets';
   document.getElementById('cajaTitulo').textContent=id?'💰 '+(k.nombre||'Caja'):'💰 Nueva caja';
-  const fs=fiestasOrden(c);
+  // Las fiestas terminadas no se ofrecen (salvo la que ya tenga la caja)
+  const fs=fiestasOrden(c).filter(f=>!f.terminada||(k&&k.fiestaId===f.id));
   document.getElementById('cjFiesta').innerHTML='<option value="">(sin fiesta)</option>'+fs.map(f=>`<option value="${f.id}">${EMO[f.tipo]||'🎪'} ${esc(f.nombre)}</option>`).join('');
   document.getElementById('cjNombre').value=k?k.nombre||'':'';
   document.getElementById('cjFecha').value=k?k.fecha||'':hoyYMD();
@@ -3186,11 +3187,11 @@ function cjPintarFilas(){
 }
 function cjPintarListados(){
   const c=activa(), tic=cjDraft.tipo==='tickets';
-  const ls=listadosDe(c.id).filter(l=>tic||lsTot(l).cobrado>0||cjDraft.listados.includes(l.id)).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+  const ls=listadosDe(c.id).filter(l=>cjDraft.listados.includes(l.id)||(!fiestaTerminada(c,l.fiestaId)&&(tic||lsTot(l).cobrado>0))).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
   document.getElementById('cjListadosW').style.display=ls.length||tic?'':'none';
   document.getElementById('cjListTit').textContent=tic?'📋 ¿Qué listados se cobran en esta caja?':'🎟️ ¿Se cobraron aquí también tickets de algún listado?';
   document.getElementById('cjListSub').textContent=tic?'(lo cobrado en la caja tiene que cuadrar con lo que marcan)':'(ese dinero ya se apunta desde Listados)';
-  document.getElementById('cjListados').innerHTML=ls.length?ls.map(l=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:3px 0"><input type="checkbox" value="${l.id}" ${cjDraft.listados.includes(l.id)?'checked':''}> 📋 ${esc(l.nombre)} · cobrado ${money(lsTot(l).cobrado)}</label>`).join(''):'<div class="muted">No hay listados en esta comisión.</div>';
+  document.getElementById('cjListados').innerHTML=ls.length?ls.map(l=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:3px 0"><input type="checkbox" value="${l.id}" ${cjDraft.listados.includes(l.id)?'checked':''}> 📋 ${esc(l.nombre)} · cobrado ${money(lsTot(l).cobrado)}</label>`).join(''):`<div class="muted">${listadosDe(c.id).length?'No hay listados de fiestas en curso (los de fiestas terminadas no salen).':'No hay listados en esta comisión.'}</div>`;
   document.querySelectorAll('#cjListados input').forEach(i=>i.onchange=()=>{ cjDraft.listados=[...document.querySelectorAll('#cjListados input:checked')].map(x=>x.value); cjActualizar(); });
 }
 function cjActualizar(){
